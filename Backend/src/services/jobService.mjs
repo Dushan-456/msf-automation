@@ -6,19 +6,43 @@ const jobs = new Map();
 /**
  * Creates a new job and returns its ID
  */
-export const createJob = (totalItems) => {
+export const createJob = (doctorNames) => {
     const jobId = randomUUID();
     jobs.set(jobId, {
         id: jobId,
         status: 'pending',
         progress: 0,
-        total: totalItems,
+        total: doctorNames.length,
         successCount: 0,
         failedCount: 0,
+        rows: doctorNames.map(name => ({
+            doctorName: name,
+            status: 'pending', // pending, processing, completed, failed
+            error: null
+        })),
         errors: [],
+        currentActivity: 'Initializing...',
         createdAt: new Date()
     });
     return jobId;
+};
+
+/**
+ * Updates the live activity status string and marks a specific row as processing
+ */
+export const updateJobActivity = (jobId, activityText, doctorName = null) => {
+    const job = jobs.get(jobId);
+    if (!job) return;
+    job.currentActivity = activityText;
+
+    if (doctorName) {
+        const row = job.rows.find(r => r.doctorName === doctorName);
+        if (row && row.status === 'pending') {
+            row.status = 'processing';
+        }
+    }
+
+    jobs.set(jobId, job);
 };
 
 /**
@@ -31,17 +55,24 @@ export const getJobStatus = (jobId) => {
 /**
  * Updates the job status during processing
  */
-export const updateJobProgress = (jobId, { success, errorDetail }) => {
+export const updateJobProgress = (jobId, { doctorName, success, errorDetail }) => {
     const job = jobs.get(jobId);
     if (!job) return;
 
     job.progress += 1;
     
+    const row = job.rows.find(r => r.doctorName === doctorName);
+
     if (success) {
         job.successCount += 1;
+        if (row) row.status = 'completed';
     } else {
         job.failedCount += 1;
         if (errorDetail) job.errors.push(errorDetail);
+        if (row) {
+            row.status = 'failed';
+            row.error = errorDetail;
+        }
     }
 
     if (job.progress === job.total) {
