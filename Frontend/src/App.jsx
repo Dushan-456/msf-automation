@@ -3,6 +3,7 @@ import axios from 'axios';
 import FileUploadZone from './components/FileUploadZone';
 import StatusBanner from './components/StatusBanner';
 import ProgressBar from './components/ProgressBar';
+import RowStatusList from './components/RowStatusList';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
@@ -118,11 +119,15 @@ function App() {
           />
 
           {jobStatus && (
-             <ProgressBar 
-                progress={jobStatus.progress} 
-                total={jobStatus.total} 
-                status={jobStatus.status} 
-             />
+             <>
+               <ProgressBar 
+                  progress={jobStatus.progress} 
+                  total={jobStatus.total} 
+                  status={jobStatus.status} 
+                  currentActivity={jobStatus.currentActivity}
+               />
+               <RowStatusList rows={jobStatus.rows} />
+             </>
           )}
 
           <button 
