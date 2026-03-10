@@ -1,6 +1,6 @@
 import fs from 'fs';
 import csv from 'csv-parser';
-import { createJob, getJobStatus, updateJobProgress, failJob } from '../services/jobService.mjs';
+import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
 import { processSurveyMonkeyWorkflow } from '../services/surveyMonkeyService.mjs';
 
 /**
@@ -20,24 +20,59 @@ export const uploadAndStartAutomation = (req, res) => {
 
     const results = [];
 
-    // Parse the CSV first to know the total count
-    fs.createReadStream(req.file.path)
-        .pipe(csv())
+    // Auto-detect encoding and separator
+    const fd = fs.openSync(req.file.path, 'r');
+    const buffer = Buffer.alloc(1024);
+    const bytesRead = fs.readSync(fd, buffer, 0, 1024, 0);
+    fs.closeSync(fd);
+
+    let encoding = 'utf8';
+    let separator = ',';
+    
+    // Check for UTF-16LE BOM
+    if (bytesRead >= 2 && buffer[0] === 0xFF && buffer[1] === 0xFE) {
+        encoding = 'utf16le';
+    }
+
+    // Read the first chunk to guess the separator
+    const firstChunk = buffer.toString(encoding, 0, bytesRead);
+    const firstLine = firstChunk.split('\n')[0];
+    if (firstLine.includes('\t') && !firstLine.includes(',')) {
+        separator = '\t';
+    } else if (firstLine.includes(';') && !firstLine.includes(',')) {
+        separator = ';';
+    }
+
+    // Parse the CSV
+    fs.createReadStream(req.file.path, { encoding })
+        .pipe(csv({ 
+            separator: separator,
+            // Clean BOM, quotes, carriage returns, and whitespace from headers
+            mapHeaders: ({ header }) => header
+                .replace(/^\ufeff/gi, '')
+                .replace(/^"|"$/g, '')
+                .replace(/[\r\n]+/g, '')
+                .trim(),
+            // Clean carriage returns, quotes, and whitespace from actual values
+            mapValues: ({ value }) => typeof value === 'string' ? value.replace(/[\r\n]+/g, '').replace(/^"|"$/g, '').trim() : value
+        }))
         .on('data', (data) => results.push(data))
         .on('error', (error) => {
+            console.error("CSV Parse Error:", error);
             fs.unlinkSync(req.file.path);
             res.status(500).json({ error: 'Failed to parse CSV file.' });
         })
         .on('end', () => {
             // Delete the temp file now that we have data in memory
-            fs.unlinkSync(req.file.path);
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
             if (results.length === 0) {
-                return res.status(400).json({ error: 'The CSV file is empty.' });
+                return res.status(400).json({ error: 'The CSV file is empty or could not be parsed.' });
             }
 
             // 1. Create the job
-            const jobId = createJob(results.length);
+            const doctorNames = results.map(r => r.doctorName);
+            const jobId = createJob(doctorNames);
 
             // 2. Respond to client immediately with jobId
             res.status(202).json({ 
@@ -58,20 +93,23 @@ const processSurveysInBackground = async (jobId, dataRows) => {
 
     for (const row of dataRows) {
         try {
+            updateJobActivity(jobId, `Processing surveys for ${row.doctorName}...`, row.doctorName);
             await processSurveyMonkeyWorkflow(row);
             console.log(`✅ Success: ${row.doctorName}`);
-            updateJobProgress(jobId, { success: true });
+            updateJobProgress(jobId, { doctorName: row.doctorName, success: true });
         } catch (error) {
             const errorMsg = error.response?.data?.error?.message || error.message;
             console.error(`❌ Failed: ${row.doctorName}`, errorMsg);
             
             updateJobProgress(jobId, { 
+                doctorName: row.doctorName,
                 success: false, 
                 errorDetail: `Failed for ${row.doctorName}: ${errorMsg}` 
             });
         }
     }
 
+    updateJobActivity(jobId, 'Finished processing all doctors in the list.');
     console.log(`Job ${jobId}: Finished processing.`);
 };
 
