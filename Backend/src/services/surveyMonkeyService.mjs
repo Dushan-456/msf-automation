@@ -8,6 +8,11 @@ const getHeaders = () => ({
 
 export const processSurveyMonkeyWorkflow = async (data) => {
     const { doctorName, trainerName, specialty, level, emails } = data;
+    
+    if (!emails || emails.trim() === "") {
+        throw new Error(`Data Validation Failed: No email address provided for ${doctorName}`);
+    }
+
     const baseTemplateId = process.env.BASE_TEMPLATE_ID;
     const headers = getHeaders();
 
@@ -47,9 +52,19 @@ export const processSurveyMonkeyWorkflow = async (data) => {
         const messageId = messageRes.data.id;
 
         // Step 6: Add Recipients in Bulk
-        const emailArray = emails.split(',').map(e => ({ email: e.trim() }));
-        await axios.post(`https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/recipients/bulk`, 
+        const cleanEmails = emails.replace(/"/g, '');
+        const emailArray = cleanEmails.split(',')
+            .map(e => ({ email: e.trim() }))
+            .filter(e => e.email !== '');
+        const bulkRes = await axios.post(`https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/recipients/bulk`, 
             { contacts: emailArray }, { headers });
+            
+        console.log(`[Bulk Recipients Response given for ${doctorName}]:`, JSON.stringify(bulkRes.data));
+        
+        // If no recipients succeeded, throw a specific error instead of failing at Step 7
+        if (bulkRes.data.succeeded && bulkRes.data.succeeded.length === 0) {
+            throw new Error(`Zero recipients were successfully added. Payload response: ${JSON.stringify(bulkRes.data)}`);
+        }
 
         // Step 7: Send the Emails
         await axios.post(`https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/send`, 
