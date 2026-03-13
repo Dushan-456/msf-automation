@@ -381,7 +381,7 @@ export const sendReminderToNonRespondents = async (surveyId) => {
     {
       type: "reminder",
       recipient_status: "has_not_responded",
-      subject: `Kind Reminder: - ${surveyTitle}`,
+      subject: `Gentle Reminder: - ${surveyTitle}`,
       body_text:
         "Hello, please provide your multisource feedback by clicking here:\n\n[SurveyLink]\n\nThank you!\n\n---\nTo unsubscribe from these emails, click here: [OptOutLink]\nView our Privacy Policy: [PrivacyLink]\n[FooterLink]",
       body_html: emailBodyHtml,
