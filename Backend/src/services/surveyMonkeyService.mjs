@@ -103,7 +103,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
                                         alt="PGIM Logo"
                                         style="width: 100%; height: auto"
                                     />
-                                    <h2 style="color: #2c3e50; text-align: justify; margin-top: 0">
+                                    <h2 style="color: #2c3e50; text-align: center; margin-top: 0">
                                         PGIM - Multisource Feedback (MSF) - <strong>${doctorName}</strong>
                                     </h2>
                                     <p style="color: #555555; font-size: 16px; line-height: 1.6">
@@ -308,7 +308,7 @@ export const sendReminderToNonRespondents = async (surveyId) => {
                                         alt="PGIM Logo"
                                         style="width: 100%; height: auto"
                                     />
-                                    <h2 style="color: #2c3e50; text-align: justify; margin-top: 0">
+                                    <h2 style="color: #2c3e50; text-align: center; margin-top: 0">
                                         PGIM - Multisource Feedback (MSF) - <strong>${doctorName}</strong>
                                     </h2>
                                     <p style="color: #555555; font-size: 16px; line-height: 1.6">
