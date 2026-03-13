@@ -33,9 +33,15 @@ export const processSurveyMonkeyWorkflow = async (data) => {
 
   // Step 1: Copy Survey
   const title = `Multisource Feedback Form (MSF) ${doctorName} Trainer - ${trainerName} Specialty - ${specialty} ( ${level} )`;
+  
+  const payload = { from_survey_id: baseTemplateId, title: title };
+  if (process.env.TARGET_FOLDER_ID) {
+    payload.folder_id = process.env.TARGET_FOLDER_ID;
+  }
+
   const copyRes = await axios.post(
     "https://api.surveymonkey.com/v3/surveys",
-    { from_survey_id: baseTemplateId, title: title },
+    payload,
     { headers },
   );
   const newSurveyId = copyRes.data.id;
