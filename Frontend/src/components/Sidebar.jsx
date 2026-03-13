@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import logo from '../assets/images/logo.png';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -11,7 +12,7 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-gray-900 text-white min-h-screen flex flex-col shadow-xl fixed left-0 top-0">
       <div className="p-6 border-b border-gray-800">
-        <img src="./src/assets/images/logo.png" alt="logo" /><br />
+        <img src={logo} alt="logo" /><br />
         <h2 className="text-2xl font-bold tracking-tight text-blue-400">MSF Automation</h2>
       </div>
       <nav className="mt-6 flex-1">
