@@ -1,5 +1,5 @@
 # Stage 1: Build the React application
-FROM node:18-alpine as build
+FROM node:20-slim AS build
 
 WORKDIR /usr/src/app
 
@@ -11,6 +11,10 @@ RUN npm install
 
 # Copy application source
 COPY . .
+
+# Accept built-time arguments
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 # Build the app for production
 RUN npm run build
