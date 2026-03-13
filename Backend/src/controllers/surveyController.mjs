@@ -1,7 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents } from '../services/surveyMonkeyService.mjs';
 
 /**
  * POST /api/v1/automate-surveys
@@ -126,4 +126,39 @@ export const checkJobStatus = (req, res) => {
     }
 
     res.json(job);
+};
+
+/**
+ * GET /api/v1/surveys
+ * Fetches all surveys from SurveyMonkey API with pagination.
+ */
+export const getAllSurveys = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const perPage = parseInt(req.query.perPage, 10) || 20;
+        const search = req.query.search || '';
+
+        const data = await fetchAllSurveys(page, perPage, search);
+        res.json(data);
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error("Error fetching surveys:", errorMsg);
+        res.status(500).json({ error: 'Failed to fetch surveys.' });
+    }
+};
+
+/**
+ * POST /api/v1/surveys/:surveyId/reminders
+ * Automates sending reminders to non-respondents for a survey.
+ */
+export const sendReminders = async (req, res) => {
+    try {
+        const { surveyId } = req.params;
+        await sendReminderToNonRespondents(surveyId);
+        res.json({ success: true, message: 'Reminders successfully sent to non-respondents.' });
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error(`Error sending reminders for survey ${req.params.surveyId}:`, errorMsg);
+        res.status(500).json({ error: `Failed to send reminders: ${errorMsg}` });
+    }
 };
