@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders } from '../controllers/surveyController.mjs';
+import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry } from '../controllers/surveyController.mjs';
 
 const router = express.Router();
 
@@ -23,6 +23,7 @@ router.post('/automate-surveys', upload.single('csvFile'), uploadAndStartAutomat
 router.get('/status/:jobId', checkJobStatus);
 router.get('/surveys', getAllSurveys);
 router.post('/surveys/:surveyId/reminders', sendReminders);
+router.post('/automate-manual', processManualEntry);
 
 // Handle Multer validation errors
 router.use((err, req, res, next) => {
