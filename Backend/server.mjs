@@ -8,8 +8,7 @@ dotenv.config();
 const app = express();
 
 // Middleware
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-app.use(cors({ origin: allowedOrigin }));
+app.use(cors()); // Allow all origins for the Docker container
 app.use(express.json());
 
 // Main Routes
