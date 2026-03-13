@@ -162,3 +162,26 @@ export const sendReminders = async (req, res) => {
         res.status(500).json({ error: `Failed to send reminders: ${errorMsg}` });
     }
 };
+
+/**
+ * POST /api/v1/automate-manual
+ * Directly processes a single doctor's survey from JSON payload.
+ */
+export const processManualEntry = async (req, res) => {
+    try {
+        const { doctorName, trainerName, specialty, level, emails } = req.body;
+        
+        if (!doctorName || !emails) {
+            return res.status(400).json({ error: "Missing required fields (doctorName, emails)." });
+        }
+
+        // Run the workflow
+        await processSurveyMonkeyWorkflow({ doctorName, trainerName, specialty, level, emails });
+        
+        res.status(200).json({ success: true, message: `Successfully processed survey for ${doctorName}.` });
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error(`❌ Manual Entry Failed: ${req.body?.doctorName}`, errorMsg);
+        res.status(500).json({ error: `Manual entry failed: ${errorMsg}` });
+    }
+};
