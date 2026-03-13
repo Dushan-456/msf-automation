@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: msf_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./Backend/.env
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    volumes:
+      - ./Backend/uploads:/usr/src/app/uploads
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: msf_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
