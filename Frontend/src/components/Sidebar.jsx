@@ -11,6 +11,7 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-gray-900 text-white min-h-screen flex flex-col shadow-xl fixed left-0 top-0">
       <div className="p-6 border-b border-gray-800">
+        <img src="./src/assets/images/logo.png" alt="logo" /><br />
         <h2 className="text-2xl font-bold tracking-tight text-blue-400">MSF Automation</h2>
       </div>
       <nav className="mt-6 flex-1">
@@ -36,6 +37,10 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
+      <div className="p-6 border-t border-gray-800">
+        <p className="text-xs font-bold tracking-tight text-white">Developed by <a target="_blank" href="https://dushanportfolio.textaworld.com/">Dushan</a> </p>
+        <p className='text-xs font-bold tracking-tight text-white'>Version 1.0.0</p>
+      </div>
     </div>
   );
 };
