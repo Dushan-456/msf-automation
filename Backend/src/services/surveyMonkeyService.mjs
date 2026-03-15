@@ -389,7 +389,7 @@ export const sendReminderToNonRespondents = async (surveyId) => {
       recipient_status: "has_not_responded",
       subject: `Gentle Reminder: - ${surveyTitle}`,
       body_text:
-        "Hello, please provide your multisource feedback by clicking here:\n\n[SurveyLink]\n\nThank you!\n\n---\nTo unsubscribe from these emails, click here: [OptOutLink]\nView our Privacy Policy: [PrivacyLink]\n[FooterLink]",
+        "Sir/Madam, On the recommendation of the AAAEC, the Board of Management of the PGIM and the Senate of the University of Colombo have approved the implementation of an online MSF submission system in parallel to the manual process for all postgraduate trainees of the PGIM. As a result, the process of submitting and analysing the multi-source feedback (formerly known as the Peer Team Rating forms) has been changed. According to the guidelines, an MD trainee is expected to complete two rounds of MSF, once prior to the MD exam and once during the post MD training. The relevant trainee should nominate 15 rators for that. PGIM trainee  has nominated you as one rator for this purpose. Therefore, I kindly request you to fill the MSF form using the below link.:\n\n[SurveyLink]\n\nThank you!\n\n---\nTo unsubscribe from these emails, click here: [OptOutLink]\nView our Privacy Policy: [PrivacyLink]\n[FooterLink]",
       body_html: emailBodyHtml,
     },
     { headers },
