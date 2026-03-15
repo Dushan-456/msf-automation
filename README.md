@@ -74,7 +74,7 @@ msf-automation/
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Dushan-456/msf-automation
    cd msf-automation
    ```
 
@@ -82,7 +82,10 @@ msf-automation/
    - Create a `.env` file in the `Backend` directory and populate it with your SurveyMonkey API credentials and any other required configurations:
      ```env
      PORT=5000
-     # Add your SurveyMonkey credentials here
+     SM_ACCESS_TOKEN=access token
+     FRONTEND_URL=http://localhost:5173
+     BASE_TEMPLATE_ID=your_template_id
+     TARGET_FOLDER_ID=your_target_folder_id
      ```
 
 3. **Start the containers:**
