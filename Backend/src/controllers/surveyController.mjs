@@ -1,7 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking } from '../services/surveyMonkeyService.mjs';
 
 /**
  * POST /api/v1/automate-surveys
@@ -183,5 +183,21 @@ export const processManualEntry = async (req, res) => {
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`❌ Manual Entry Failed: ${req.body?.doctorName}`, errorMsg);
         res.status(500).json({ error: `Manual entry failed: ${errorMsg}` });
+    }
+};
+
+/**
+ * GET /api/v1/surveys/:surveyId/tracking
+ * Returns recipient email & response tracking data for a specific survey.
+ */
+export const getTrackingData = async (req, res) => {
+    try {
+        const { surveyId } = req.params;
+        const data = await fetchRecipientTracking(surveyId);
+        res.json(data);
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error(`Error fetching tracking data for survey ${req.params.surveyId}:`, errorMsg);
+        res.status(500).json({ error: `Failed to fetch tracking data: ${errorMsg}` });
     }
 };
