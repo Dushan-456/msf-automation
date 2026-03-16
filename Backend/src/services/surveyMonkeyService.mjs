@@ -406,3 +406,54 @@ export const sendReminderToNonRespondents = async (surveyId) => {
 
   return sendRes.data;
 };
+
+/**
+ * Fetches recipient tracking data (email + response status) for a given survey.
+ * SM list endpoints omit status fields; we fetch each recipient individually
+ * (in parallel) from /collectors/{id}/recipients/{recipientId} which includes
+ * `status` and `survey_response_status`.
+ */
+export const fetchRecipientTracking = async (surveyId) => {
+  const headers = getHeaders();
+
+  // Step 1: Get the first collector for this survey
+  const collectorsRes = await axios.get(
+    `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors`,
+    { headers }
+  );
+
+  if (!collectorsRes.data || collectorsRes.data.data.length === 0) {
+    throw new Error(`No collectors found for Survey ID: ${surveyId}`);
+  }
+
+  const collectorId = collectorsRes.data.data[0].id;
+
+  // Step 2: Get the recipient ID list from the collector (up to 100)
+  const listRes = await axios.get(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/recipients?per_page=100`,
+    { headers }
+  );
+
+  const recipientList = listRes.data?.data || [];
+
+  if (recipientList.length === 0) {
+    return [];
+  }
+
+  // Step 3: Fetch each recipient's full detail record in parallel.
+  // The individual endpoint includes `status` and `survey_response_status`.
+  const detailRequests = recipientList.slice(0, 50).map((r) =>
+    axios
+      .get(`https://api.surveymonkey.com/v3/collectors/${collectorId}/recipients/${r.id}`, { headers })
+      .then((res) => res.data)
+      .catch(() => ({ id: r.id, email: r.email, status: null, survey_response_status: null }))
+  );
+
+  const details = await Promise.all(detailRequests);
+
+  return details.map((item) => ({
+    email: item.email,
+    email_status: item.mail_status,
+    response_status: item.survey_response_status,
+  }));
+};
