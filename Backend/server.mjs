@@ -14,6 +14,20 @@ app.use(express.json());
 // Main Routes
 app.use('/api/v1', surveyRoutes);
 
+// Authentication Route
+app.post('/api/v1/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    const validUsername = process.env.ADMIN_USERNAME?.trim();
+    const validPassword = process.env.ADMIN_PASSWORD?.trim();
+    
+    if (username === validUsername && password === validPassword) {
+        return res.status(200).json({ success: true, message: 'Login successful' });
+    }
+    
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'MSF Automation API is running' });
