@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry, getTrackingData } from '../controllers/surveyController.mjs';
+import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry, getTrackingData, getSurveyCollectors, getTrackingByCollector } from '../controllers/surveyController.mjs';
 
 const router = express.Router();
 
@@ -24,6 +24,8 @@ router.get('/status/:jobId', checkJobStatus);
 router.get('/surveys', getAllSurveys);
 router.post('/surveys/:surveyId/reminders', sendReminders);
 router.get('/surveys/:surveyId/tracking', getTrackingData);
+router.get('/surveys/:surveyId/collectors', getSurveyCollectors);
+router.get('/collectors/:collectorId/tracking', getTrackingByCollector);
 router.post('/automate-manual', processManualEntry);
 
 // Handle Multer validation errors
