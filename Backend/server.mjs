@@ -18,8 +18,13 @@ app.use('/api/v1', surveyRoutes);
 app.post('/api/v1/login', (req, res) => {
     const { username, password } = req.body;
     
+    // DEBUG LOG
+    console.log(`[Login] Attempt with username: '${username}'`);
+    
     const validUsername = process.env.ADMIN_USERNAME?.trim();
     const validPassword = process.env.ADMIN_PASSWORD?.trim();
+    
+    console.log(`[Login] Comparing with loaded config - Username: '${validUsername}', Password: '${validPassword}'`);
     
     if (username === validUsername && password === validPassword) {
         return res.status(200).json({ success: true, message: 'Login successful' });
