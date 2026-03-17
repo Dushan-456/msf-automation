@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import pgimLogo from '../assets/images/pgim-msf.png';
+import pgimLogo from '../assets/images/login logo.png';
 import smlogo from '../assets/images/sm.png';
 import axios from 'axios';
 
@@ -36,7 +36,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="flex justify-center mb-6">
-          <img src={pgimLogo} alt="Logo" className="h-15 w-auto" />
+          <img src={pgimLogo} alt="Logo" className="h-35 w-auto" />
         </div>
       <div className="max-w-md w-full space-y-8 bg-gray-800 p-10 rounded-2xl shadow-2xl border border-gray-700">
         <div className="flex justify-center ">
