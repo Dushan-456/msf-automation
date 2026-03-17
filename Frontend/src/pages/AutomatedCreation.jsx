@@ -5,7 +5,7 @@ import StatusBanner from '../components/StatusBanner';
 import ProgressBar from '../components/ProgressBar';
 import RowStatusList from '../components/RowStatusList';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 const AutomatedCreation = () => {
   const [file, setFile] = useState(null);
