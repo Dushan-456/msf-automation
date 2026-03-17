@@ -14,14 +14,16 @@ const Sidebar = ({ onLogout }) => {
   return (
     <div className="w-74 bg-gray-900 text-white min-h-screen flex flex-col shadow-xl fixed left-0 top-0">
       <div className="p-6 border-b border-gray-800">
-        <img src={logo} alt="logo" className="w-full" />
+        <Link to="/" className="flex gap-2 hover:opacity-80 transition-opacity">
+          <img src={logo} alt="logo" className="w-full" />
+        </Link>
         <br />
-        <div className="flex gap-2">
+        <Link to="/" className="flex gap-2 hover:opacity-80 transition-opacity">
           <img src={msfLogo} alt="logo" className="w-8" />
           <h2 className="text-2xl font-bold tracking-tight text-blue-400">
             MSF Automation
           </h2>
-        </div>
+        </Link>
       </div>
       <nav className="mt-6 flex-1">
         <ul className="space-y-2 px-4">
