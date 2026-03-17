@@ -30,7 +30,7 @@ export default function RowStatusList({ rows }) {
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 text-sm font-semibold text-gray-700">
                 Detailed Status (Row by Row)
             </div>
-            <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+            <ul className="overflow-y-auto divide-y divide-gray-100">
                 {rows.map((row, idx) => (
                     <li key={idx} className={`p-4 transition-colors ${getStatusStyle(row.status)}`}>
                         <div className="flex items-start justify-between">
