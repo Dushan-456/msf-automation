@@ -2,6 +2,7 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
 import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector } from '../services/surveyMonkeyService.mjs';
+import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
  * POST /api/v1/automate-surveys
@@ -95,6 +96,18 @@ const processSurveysInBackground = async (jobId, dataRows) => {
         try {
             updateJobActivity(jobId, `Processing surveys for ${row.doctorName}...`, row.doctorName);
             await processSurveyMonkeyWorkflow(row);
+            
+            // Send doctor notification email right after successful SurveyMonkey creation
+            if (row.doctorEmail) {
+                try {
+                    await sendDoctorNotificationEmail(row.doctorName, row.doctorEmail);
+                } catch (emailError) {
+                    console.error(`Failed to send notification email to ${row.doctorEmail}. Survey workflow completed anyway.`, emailError);
+                    // Decide if you want to fail the job if the email fails, or just log it. 
+                    // Usually we don't want to fail the whole survey creation if only the final notification failed.
+                }
+            }
+            
             console.log(`✅ Success: ${row.doctorName}`);
             updateJobProgress(jobId, { doctorName: row.doctorName, success: true });
         } catch (error) {
@@ -169,7 +182,7 @@ export const sendReminders = async (req, res) => {
  */
 export const processManualEntry = async (req, res) => {
     try {
-        const { doctorName, trainerName, specialty, level, emails } = req.body;
+        const { doctorName, doctorEmail, trainerName, specialty, level, emails } = req.body;
         
         if (!doctorName || !emails) {
             return res.status(400).json({ error: "Missing required fields (doctorName, emails)." });
@@ -177,6 +190,16 @@ export const processManualEntry = async (req, res) => {
 
         // Run the workflow
         await processSurveyMonkeyWorkflow({ doctorName, trainerName, specialty, level, emails });
+        
+        // Send notification email
+        if (doctorEmail) {
+            try {
+                await sendDoctorNotificationEmail(doctorName, doctorEmail);
+            } catch (emailError) {
+                console.error(`Failed to send notification email to ${doctorEmail}. Survey workflow completed anyway.`, emailError);
+                // Continue with success response because main workflow succeeded
+            }
+        }
         
         res.status(200).json({ success: true, message: `Successfully processed survey for ${doctorName}.` });
     } catch (error) {
