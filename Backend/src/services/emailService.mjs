@@ -18,20 +18,21 @@ export const sendDoctorNotificationEmail = async (doctorName, doctorEmail) => {
     }
 
     const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: doctorEmail,
-        subject: 'Your MSF Survey has been Distributed',
-        html: `
+      from: process.env.EMAIL_USER,
+      to: doctorEmail,
+      subject: "Your MSF Survey has been Distributed",
+      html: `
             <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-                <p>Dear Dr. ${doctorName},</p>
-                <p>We are pleased to inform you that your Multi-Source Feedback (MSF) survey has been successfully distributed to your selected evaluators.</p>
-                <p>To help ensure a high response rate, we kindly ask that you remind your evaluators to complete and submit their responses as soon as possible.</p>
+                <p>Dear ${doctorName},</p>
+                <p>We are pleased to inform you that your Multi-Source Feedback (MSF) survey has been successfully distributed to your selected feedback providers via email.</p>
+                <p>The analysis will be carried out only after receiving a minimum of 12 responses from the feedback providers.</p>
+                <p>To help ensure a high response rate, we kindly request that you remind your feedback providers to complete and submit their responses as soon as possible. Please also inform them that the survey email may sometimes be delivered to the spam/junk folder, and to check those folders as well.</p>
                 <p>Thank you for your cooperation.</p>
                 <br>
                 <p>Best regards,</p>
                 <p><strong>MSF Administration Team</strong></p>
             </div>
-        `
+        `,
     };
 
     try {
