@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 export const sendDoctorNotificationEmail = async (doctorName, doctorEmail) => {
     if (!doctorEmail) {
         console.warn(`No email provided for doctor ${doctorName}. Skipping notification.`);
-        return; // Alternatively, we could throw, but skipping might be safer so the job doesn't fail if the email is just missing.
+        return; 
     }
 
     const mailOptions = {
@@ -24,9 +24,10 @@ export const sendDoctorNotificationEmail = async (doctorName, doctorEmail) => {
       html: `
             <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
                 <p>Dear ${doctorName},</p>
-                <p>We are pleased to inform you that your Multi-Source Feedback (MSF) survey has been successfully distributed to your selected feedback providers via email.</p>
-                <p>The analysis will be carried out only after receiving a minimum of 12 responses from the feedback providers.</p>
-                <p>To help ensure a high response rate, we kindly request that you remind your feedback providers to complete and submit their responses as soon as possible. Please also inform them that the survey email may sometimes be delivered to the spam/junk folder, and to check those folders as well.</p>
+                <p>We are pleased to inform you that your Multi-Source Feedback (MSF) survey has been successfully <br>distributed to your selected feedback providers via email.</p>
+                <p>The analysis will be carried out only after receiving a <strong>minimum of 12 responses</strong> from the feedback providers.</p>
+                <p>To help ensure a high response rate, we kindly request that you remind your feedback providers to <br> complete and submit their responses as soon as possible. Please also inform them that the survey email may <br>sometimes be delivered to the spam/junk folder, and to check those folders as well.</p>
+                <p>We also kindly request that you follow up on your MSF status and contact MERC <a href="mailto:merc@pgim.cmb.ac.lk">merc@pgim.cmb.ac.lk</a> if you require any <br>clarification.</p>
                 <p>Thank you for your cooperation.</p>
                 <br>
                 <p>Best regards,</p>
