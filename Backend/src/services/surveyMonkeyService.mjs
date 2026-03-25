@@ -484,3 +484,90 @@ export const fetchRecipientTracking = async (surveyId) => {
   const collectorId = collectorsRes.data.data[0].id;
   return fetchRecipientTrackingByCollector(collectorId);
 };
+
+/**
+ * Fetches surveys from the 'Ready for Analysis' folder (ID 2452482)
+ * and filters for response_count >= 12.
+ */
+export const fetchReadySurveys = async (page = 1, perPage = 50) => {
+  const headers = getHeaders();
+  const folderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
+  
+  let allSurveys = [];
+  let currentSmPage = 1;
+  let hasMore = true;
+  
+  const targetEligibleCount = page * perPage;
+
+  // Fetch using native num_responses sorting so highest responses come first
+  while (hasMore) {
+    const url = `https://api.surveymonkey.com/v3/surveys?page=${currentSmPage}&per_page=100&folder_id=${folderId}&sort_by=num_responses&sort_order=DESC&include=response_count`;
+    const res = await axios.get(url, { headers });
+    
+    const batch = res.data?.data || [];
+    
+    // Add only eligible surveys
+    for (const survey of batch) {
+      if (survey.response_count >= 12) {
+        allSurveys.push(survey);
+      }
+    }
+    
+    // Stop if we hit the end of the folder
+    if (batch.length < 100) {
+      hasMore = false;
+    } 
+    // Stop instantly if we hit < 12, because it is sorted DESC, all future ones will be < 12
+    else if (batch.some(s => s.response_count < 12)) {
+      hasMore = false;
+    }
+    // Stop if we satisfied the UI's pagination request
+    else if (allSurveys.length >= targetEligibleCount) {
+      hasMore = false; 
+    } 
+    else {
+      currentSmPage++;
+    }
+  }
+  
+  // Surveys are already natively sorted by num_responses DESC
+  const startIndex = (page - 1) * perPage;
+  const paginatedSurveys = allSurveys.slice(startIndex, startIndex + perPage);
+  
+  return paginatedSurveys;
+};
+
+/**
+ * Fetches data needed for the PDF report: details, rollups, and bulk responses.
+ */
+export const fetchSurveyReportData = async (surveyId) => {
+  const headers = getHeaders();
+  
+  const [detailsRes, rollupsRes, bulkRes] = await Promise.all([
+    axios.get(`https://api.surveymonkey.com/v3/surveys/${surveyId}/details`, { headers }),
+    axios.get(`https://api.surveymonkey.com/v3/surveys/${surveyId}/rollups`, { headers }),
+    axios.get(`https://api.surveymonkey.com/v3/surveys/${surveyId}/responses/bulk`, { headers })
+  ]);
+
+  return {
+    details: detailsRes.data,
+    rollups: rollupsRes.data,
+    bulk: bulkRes.data
+  };
+};
+
+/**
+ * Marks a survey as complete by moving it to the 'Completed' folder (ID 2451474).
+ */
+export const markSurveyComplete = async (surveyId) => {
+  const headers = getHeaders();
+  const completedFolderId = process.env.ANALYZED_FOLDER_ID || "2451474";
+  
+  const res = await axios.patch(
+    `https://api.surveymonkey.com/v3/surveys/${surveyId}`,
+    { folder_id: completedFolderId },
+    { headers }
+  );
+  
+  return res.data;
+};
