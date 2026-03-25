@@ -35,8 +35,8 @@ export const processSurveyMonkeyWorkflow = async (data) => {
   const title = `Multisource Feedback Form (MSF) ${doctorName} Trainer - ${trainerName} Specialty - ${specialty} ( ${level} )`;
   
   const payload = { from_survey_id: baseTemplateId, title: title };
-  if (process.env.TARGET_FOLDER_ID) {
-    payload.folder_id = process.env.TARGET_FOLDER_ID;
+  if (process.env.TO_BE_ANALYZE_FOLDER_ID) {
+    payload.folder_id = process.env.TO_BE_ANALYZE_FOLDER_ID;
   }
 
   const copyRes = await axios.post(
