@@ -149,13 +149,22 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
   const handleDownloadAndFinalize = () => {
     if (pdfBlob) {
       const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${getDocumentTitle()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      // Open in a new tab to bypass Chrome's "Insecure Download" block on HTTP connections
+      const newWindow = window.open(url, '_blank');
+      
+      // Fallback if popup blocker prevented the new tab
+      if (!newWindow) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${getDocumentTitle()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      
+      // Delay revocation to give the new tab plenty of time to load the blob
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
     handleFinalize();
   };
