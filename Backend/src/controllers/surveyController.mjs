@@ -1,7 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -254,5 +254,56 @@ export const getTrackingByCollector = async (req, res) => {
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error fetching tracking for collector ${req.params.collectorId}:`, errorMsg);
         res.status(500).json({ error: `Failed to fetch tracking data: ${errorMsg}` });
+    }
+};
+
+/**
+ * GET /api/v1/reports/ready
+ * Returns list of eligible surveys dynamically fetched from SM.
+ */
+export const getReadySurveys = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const perPage = parseInt(req.query.perPage, 10) || 50;
+        const data = await fetchReadySurveys(page, perPage);
+        res.json(data);
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error("Error fetching ready surveys:", errorMsg);
+        res.status(500).json({ error: 'Failed to fetch ready surveys.' });
+    }
+};
+
+/**
+ * GET /api/v1/reports/:surveyId/data
+ * Returns details, rollups, and bulk responses for a survey.
+ */
+export const getSurveyReportData = async (req, res) => {
+    try {
+        const { surveyId } = req.params;
+        console.log(`[Backend] Fetching report data for survey: ${surveyId}...`);
+        const data = await fetchSurveyReportData(surveyId);
+        console.log(`[Backend] Successfully fetched report data for survey: ${surveyId}`);
+        res.json(data);
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error(`Error fetching report data for survey ${req.params.surveyId}:`, errorMsg);
+        res.status(500).json({ error: `Failed to fetch report data: ${errorMsg}` });
+    }
+};
+
+/**
+ * PATCH /api/v1/reports/:surveyId/complete
+ * Moves survey to completed folder.
+ */
+export const markSurveyComplete = async (req, res) => {
+    try {
+        const { surveyId } = req.params;
+        await markSurveyCompleteService(surveyId);
+        res.json({ success: true, message: 'Survey successfully marked as complete.' });
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error(`Error marking survey ${req.params.surveyId} as complete:`, errorMsg);
+        res.status(500).json({ error: `Failed to mark survey complete: ${errorMsg}` });
     }
 };
