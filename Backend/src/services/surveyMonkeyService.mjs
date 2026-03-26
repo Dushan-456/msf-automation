@@ -28,7 +28,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
     );
   }
 
-  const baseTemplateId = process.env.BASE_TEMPLATE_ID ? process.env.BASE_TEMPLATE_ID.trim() : "";
+  const baseTemplateId = process.env.BASE_TEMPLATE_ID;
   const headers = getHeaders();
 
   // Step 1: Copy Survey
@@ -36,7 +36,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
   
   const payload = { from_survey_id: baseTemplateId, title: title };
   if (process.env.TO_BE_ANALYZE_FOLDER_ID) {
-    payload.folder_id = process.env.TO_BE_ANALYZE_FOLDER_ID.trim();
+    payload.folder_id = process.env.TO_BE_ANALYZE_FOLDER_ID;
   }
 
   const copyRes = await axios.post(
@@ -491,7 +491,7 @@ export const fetchRecipientTracking = async (surveyId) => {
  */
 export const fetchReadySurveys = async (page = 1, perPage = 50) => {
   const headers = getHeaders();
-  const folderId = (process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482").trim();
+  const folderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
   
   let allSurveys = [];
   let currentSmPage = 1;
@@ -561,7 +561,7 @@ export const fetchSurveyReportData = async (surveyId) => {
  */
 export const markSurveyComplete = async (surveyId) => {
   const headers = getHeaders();
-  const completedFolderId = (process.env.ANALYZED_FOLDER_ID || "2451474").trim();
+  const completedFolderId = process.env.ANALYZED_FOLDER_ID || "2451474";
   
   const res = await axios.patch(
     `https://api.surveymonkey.com/v3/surveys/${surveyId}`,
