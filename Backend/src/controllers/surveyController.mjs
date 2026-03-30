@@ -92,9 +92,10 @@ export const uploadAndStartAutomation = (req, res) => {
 const processSurveysInBackground = async (jobId, dataRows) => {
     console.log(`Job ${jobId}: Started processing ${dataRows.length} rows.`);
 
-    for (const row of dataRows) {
+    for (let i = 0; i < dataRows.length; i++) {
+        const row = dataRows[i];
         try {
-            updateJobActivity(jobId, `Processing surveys for ${row.doctorName}...`, row.doctorName);
+            updateJobActivity(jobId, `Processing surveys for ${row.doctorName}...`, i);
             await processSurveyMonkeyWorkflow(row);
             
             // Send doctor notification email right after successful SurveyMonkey creation
@@ -109,13 +110,13 @@ const processSurveysInBackground = async (jobId, dataRows) => {
             }
             
             console.log(`✅ Success: ${row.doctorName}`);
-            updateJobProgress(jobId, { doctorName: row.doctorName, success: true });
+            updateJobProgress(jobId, { rowIndex: i, success: true });
         } catch (error) {
             const errorMsg = error.response?.data?.error?.message || error.message;
             console.error(`❌ Failed: ${row.doctorName}`, errorMsg);
             
             updateJobProgress(jobId, { 
-                doctorName: row.doctorName,
+                rowIndex: i,
                 success: false, 
                 errorDetail: `Failed for ${row.doctorName}: ${errorMsg}` 
             });
