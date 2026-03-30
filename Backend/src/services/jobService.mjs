@@ -15,7 +15,8 @@ export const createJob = (doctorNames) => {
         total: doctorNames.length,
         successCount: 0,
         failedCount: 0,
-        rows: doctorNames.map(name => ({
+        rows: doctorNames.map((name, index) => ({
+            id: index,
             doctorName: name,
             status: 'pending', // pending, processing, completed, failed
             error: null
@@ -30,13 +31,13 @@ export const createJob = (doctorNames) => {
 /**
  * Updates the live activity status string and marks a specific row as processing
  */
-export const updateJobActivity = (jobId, activityText, doctorName = null) => {
+export const updateJobActivity = (jobId, activityText, rowIndex = null) => {
     const job = jobs.get(jobId);
     if (!job) return;
     job.currentActivity = activityText;
 
-    if (doctorName) {
-        const row = job.rows.find(r => r.doctorName === doctorName);
+    if (rowIndex !== null) {
+        const row = job.rows[rowIndex];
         if (row && row.status === 'pending') {
             row.status = 'processing';
         }
@@ -55,13 +56,13 @@ export const getJobStatus = (jobId) => {
 /**
  * Updates the job status during processing
  */
-export const updateJobProgress = (jobId, { doctorName, success, errorDetail }) => {
+export const updateJobProgress = (jobId, { rowIndex, success, errorDetail }) => {
     const job = jobs.get(jobId);
     if (!job) return;
 
     job.progress += 1;
     
-    const row = job.rows.find(r => r.doctorName === doctorName);
+    const row = job.rows[rowIndex];
 
     if (success) {
         job.successCount += 1;
