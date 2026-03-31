@@ -101,7 +101,7 @@ const processSurveysInBackground = async (jobId, dataRows) => {
             // Send doctor notification email right after successful SurveyMonkey creation
             if (row.doctorEmail) {
                 try {
-                    await sendDoctorNotificationEmail(row.doctorName, row.doctorEmail);
+                    await sendDoctorNotificationEmail(row.doctorName, row.doctorEmail, row.specialty, row.level);
                 } catch (emailError) {
                     console.error(`Failed to send notification email to ${row.doctorEmail}. Survey workflow completed anyway.`, emailError);
                     // Decide if you want to fail the job if the email fails, or just log it. 
@@ -195,7 +195,7 @@ export const processManualEntry = async (req, res) => {
         // Send notification email
         if (doctorEmail) {
             try {
-                await sendDoctorNotificationEmail(doctorName, doctorEmail);
+                await sendDoctorNotificationEmail(doctorName, doctorEmail, specialty, level);
             } catch (emailError) {
                 console.error(`Failed to send notification email to ${doctorEmail}. Survey workflow completed anyway.`, emailError);
                 // Continue with success response because main workflow succeeded
