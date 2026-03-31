@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-export const sendDoctorNotificationEmail = async (doctorName, doctorEmail) => {
+export const sendDoctorNotificationEmail = async (doctorName, doctorEmail, specialty, level) => {
     if (!doctorEmail) {
         console.warn(`No email provided for doctor ${doctorName}. Skipping notification.`);
         return; 
@@ -20,11 +20,11 @@ export const sendDoctorNotificationEmail = async (doctorName, doctorEmail) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: doctorEmail,
-      subject: "Your MSF Survey has been Distributed",
+      subject: `Your ${specialty || ""} - ${level || ""} MSF Survey has been Distributed`,
       html: `
             <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
                 <p>Dear ${doctorName},</p>
-                <p>We are pleased to inform you that your Multi-Source Feedback (MSF) survey has been successfully <br>
+                <p>We are pleased to inform you that your ${specialty || ""} - ${level || ""} Multi-Source Feedback (MSF) survey has been successfully <br>
                 distributed to your selected feedback providers via email.</p>
 
                 <p>The analysis will be carried out only after receiving a <strong>minimum of 12 responses</strong> from the feedback providers.</p>
