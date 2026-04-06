@@ -37,7 +37,7 @@ export const sendDoctorNotificationEmail = async (doctorName, doctorEmail, speci
                 <p>Thank you for your cooperation.</p>
                 <br>
                 <p>Best regards,</p>
-                <p><strong>MSF Administration Team</strong></p>
+                <p><strong>K N Dushan</strong></p>
             </div>
         `,
     };
