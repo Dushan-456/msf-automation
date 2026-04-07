@@ -102,8 +102,13 @@ const AutomatedCreation = () => {
       
     } catch (error) {
       console.error(error);
+      const isRateLimit = error.response?.status === 429 || error.response?.data?.error === 'RateLimit';
       setStatusType('error');
-      setStatusMessage(error.response?.data?.error || "An error occurred while uploading the file.");
+      setStatusMessage(
+        isRateLimit
+          ? '🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.'
+          : error.response?.data?.error || "An error occurred while uploading the file."
+      );
       setJobId(null);
     }
   };
@@ -134,7 +139,12 @@ const AutomatedCreation = () => {
       setEmails('');
     } catch (error) {
       console.error(error);
-      setManualStatusMessage(error.response?.data?.error || "An error occurred while processing manual entry.");
+      const isRateLimit = error.response?.status === 429 || error.response?.data?.error === 'RateLimit';
+      setManualStatusMessage(
+        isRateLimit
+          ? '🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.'
+          : error.response?.data?.error || "An error occurred while processing manual entry."
+      );
       setManualStatusType('error');
     } finally {
       setIsManualSubmitting(false);
