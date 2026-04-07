@@ -38,6 +38,9 @@ const AllSurveys = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [trackingPage, setTrackingPage] = useState(1);
 
+  // Copy Table State
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     fetchSurveys(page, activeSearch);
   }, [page, activeSearch]);
@@ -61,7 +64,11 @@ const AllSurveys = () => {
         // Auto-select the first collector
         if (list.length > 0) setSelectedCollector(list[0]);
       })
-      .catch(err => console.error('Collectors fetch error:', err))
+      .catch(err => {
+        console.error('Collectors fetch error:', err);
+        const isRateLimit = err.response?.status === 429 || err.response?.data?.error === 'RateLimit';
+        if (isRateLimit) showToast('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.', 'error');
+      })
       .finally(() => setCollectorsLoading(false));
   }, [isModalOpen, selectedSurvey]);
 
@@ -74,7 +81,11 @@ const AllSurveys = () => {
     setTrackingPage(1);
     axios.get(`${API_URL}/collectors/${selectedCollector.id}/tracking`)
       .then(res => setRecipients(Array.isArray(res.data) ? res.data : []))
-      .catch(err => console.error('Tracking fetch error:', err))
+      .catch(err => {
+        console.error('Tracking fetch error:', err);
+        const isRateLimit = err.response?.status === 429 || err.response?.data?.error === 'RateLimit';
+        if (isRateLimit) showToast('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.', 'error');
+      })
       .finally(() => setTrackingLoading(false));
   }, [selectedCollector]);
 
@@ -100,7 +111,12 @@ const AllSurveys = () => {
       }
     } catch (err) {
       console.error(err);
-      setError('Failed to fetch surveys. Please try again later.');
+      const isRateLimit = err.response?.status === 429 || err.response?.data?.error === 'RateLimit';
+      setError(
+        isRateLimit
+          ? '🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.'
+          : 'Failed to fetch surveys. Please try again later.'
+      );
     } finally {
       setLoading(false);
     }
@@ -148,8 +164,13 @@ const AllSurveys = () => {
       showToast('Reminders successfully sent to non-respondents!', 'success');
       closeModal();
     } catch (err) {
-      const errorMsg = err.response?.data?.error || err.message;
-      showToast(`Failed to send reminders: ${errorMsg}`, 'error');
+      const isRateLimit = err.response?.status === 429 || err.response?.data?.error === 'RateLimit';
+      if (isRateLimit) {
+        showToast('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.', 'error');
+      } else {
+        const errorMsg = err.response?.data?.error || err.message;
+        showToast(`Failed to send reminders: ${errorMsg}`, 'error');
+      }
     } finally {
       setIsSendingReminder(false);
     }
@@ -165,6 +186,68 @@ const AllSurveys = () => {
     setSearchInput('');
     setActiveSearch('');
     setPage(1);
+  };
+
+  // --- Copy Table as Rich HTML for Email ---
+  const handleCopyTable = async () => {
+    const getEmailStatusColor = (status) => {
+      if (status === 'bounced' || status === 'opted_out') return '#dc2626';
+      if (status === 'sent' || status === 'responded') return '#15803d';
+      if (status === 'not_responded') return '#b45309';
+      return '#475569';
+    };
+    const getResponseStatusColor = (status) => {
+      if (status === 'completely_responded') return '#15803d';
+      if (status === 'partial' || status === 'partially_completed') return '#b45309';
+      return '#dc2626';
+    };
+    const formatLabel = (s) => (s || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const rows = filteredRecipients.map(r => {
+      const emailLabel = formatLabel(r.email_status);
+      const responseLabel = formatLabel(r.response_status || 'not responded');
+      return `<tr>
+        <td style="border:1px solid #e2e8f0;padding:8px 12px;font-size:14px;color:#334155;">${r.email}</td>
+        <td style="border:1px solid #e2e8f0;padding:8px 12px;font-size:14px;color:${getEmailStatusColor(r.email_status)};font-weight:600;">${emailLabel}</td>
+        <td style="border:1px solid #e2e8f0;padding:8px 12px;font-size:14px;color:${getResponseStatusColor(r.response_status)};font-weight:600;">${responseLabel}</td>
+      </tr>`;
+    }).join('');
+
+    const htmlString = `<table style="border-collapse:collapse;width:100%;font-family:Arial,Helvetica,sans-serif;">
+      <thead>
+        <tr style="background-color:#f1f5f9;">
+          <th style="border:1px solid #cbd5e1;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Email</th>
+          <th style="border:1px solid #cbd5e1;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Email Status</th>
+          <th style="border:1px solid #cbd5e1;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Response Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+    const plainText = filteredRecipients.map(r =>
+      `${r.email}\t${formatLabel(r.email_status)}\t${formatLabel(r.response_status || 'not responded')}`
+    ).join('\n');
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([htmlString], { type: 'text/html' }),
+          'text/plain': new Blob([plainText], { type: 'text/plain' }),
+        }),
+      ]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy table:', err);
+      // Fallback to plain text
+      try {
+        await navigator.clipboard.writeText(plainText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (e) {
+        console.error('Fallback clipboard write failed:', e);
+      }
+    }
   };
 
   // Derived: filter recipients based on selected filterStatus
@@ -573,6 +656,37 @@ const AllSurveys = () => {
                             {label}
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Copy Table Button — only shown when there are filtered recipients */}
+                    {!trackingLoading && filteredRecipients.length > 0 && (
+                      <div className="flex justify-end mb-2">
+                        <button
+                          onClick={handleCopyTable}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${
+                            copied
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow'
+                          }`}
+                          title="Copy table as formatted HTML for email"
+                        >
+                          {copied ? (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                              </svg>
+                              Copy Table
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
 
