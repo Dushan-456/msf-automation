@@ -22,7 +22,13 @@ export default function ReadyForAnalysis() {
       setError(null);
       const res = await fetch(`${API_URL}/reports/ready?page=${pageNum}&perPage=${perPage}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+      if (!res.ok) {
+        // --- 429 Rate Limit Safety Net ---
+        if (res.status === 429 || data?.error === 'RateLimit') {
+          throw new Error('\ud83d\udeab SurveyMonkey API daily limit reached. Please try again tomorrow.');
+        }
+        throw new Error(data.error || 'Failed to fetch');
+      }
       setSurveys(data);
     } catch (err) {
       setError(err.message);
