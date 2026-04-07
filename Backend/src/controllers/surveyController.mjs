@@ -112,6 +112,26 @@ const processSurveysInBackground = async (jobId, dataRows) => {
             console.log(`✅ Success: ${row.doctorName}`);
             updateJobProgress(jobId, { rowIndex: i, success: true });
         } catch (error) {
+            // --- 429 Rate Limit Safety Net ---
+            if (error.response?.status === 429) {
+                console.error(`🚫 Rate limit hit during processing of ${row.doctorName}. Aborting remaining rows.`);
+                updateJobProgress(jobId, {
+                    rowIndex: i,
+                    success: false,
+                    errorDetail: `Rate limit hit for ${row.doctorName}: SurveyMonkey API daily limit reached.`
+                });
+                // Mark all remaining rows as failed due to rate limit
+                for (let j = i + 1; j < dataRows.length; j++) {
+                    updateJobProgress(jobId, {
+                        rowIndex: j,
+                        success: false,
+                        errorDetail: 'Skipped — SurveyMonkey API daily limit reached.'
+                    });
+                }
+                failJob(jobId, 'SurveyMonkey API daily limit reached. Please try again tomorrow.');
+                return; // Abort the loop entirely
+            }
+
             const errorMsg = error.response?.data?.error?.message || error.message;
             console.error(`❌ Failed: ${row.doctorName}`, errorMsg);
             
@@ -155,6 +175,9 @@ export const getAllSurveys = async (req, res) => {
         const data = await fetchAllSurveys(page, perPage, search);
         res.json(data);
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error("Error fetching surveys:", errorMsg);
         res.status(500).json({ error: 'Failed to fetch surveys.' });
@@ -171,6 +194,9 @@ export const sendReminders = async (req, res) => {
         await sendReminderToNonRespondents(surveyId);
         res.json({ success: true, message: 'Reminders successfully sent to non-respondents.' });
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error sending reminders for survey ${req.params.surveyId}:`, errorMsg);
         res.status(500).json({ error: `Failed to send reminders: ${errorMsg}` });
@@ -204,6 +230,9 @@ export const processManualEntry = async (req, res) => {
         
         res.status(200).json({ success: true, message: `Successfully processed survey for ${doctorName}.` });
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`❌ Manual Entry Failed: ${req.body?.doctorName}`, errorMsg);
         res.status(500).json({ error: `Manual entry failed: ${errorMsg}` });
@@ -220,6 +249,9 @@ export const getTrackingData = async (req, res) => {
         const data = await fetchRecipientTracking(surveyId);
         res.json(data);
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error fetching tracking data for survey ${req.params.surveyId}:`, errorMsg);
         res.status(500).json({ error: `Failed to fetch tracking data: ${errorMsg}` });
@@ -236,6 +268,9 @@ export const getSurveyCollectors = async (req, res) => {
         const data = await fetchSurveyCollectors(surveyId);
         res.json(data);
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error fetching collectors for survey ${req.params.surveyId}:`, errorMsg);
         res.status(500).json({ error: `Failed to fetch collectors: ${errorMsg}` });
@@ -252,6 +287,9 @@ export const getTrackingByCollector = async (req, res) => {
         const data = await fetchRecipientTrackingByCollector(collectorId);
         res.json(data);
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error fetching tracking for collector ${req.params.collectorId}:`, errorMsg);
         res.status(500).json({ error: `Failed to fetch tracking data: ${errorMsg}` });
@@ -269,6 +307,9 @@ export const getReadySurveys = async (req, res) => {
         const data = await fetchReadySurveys(page, perPage);
         res.json(data);
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error("Error fetching ready surveys:", errorMsg);
         res.status(500).json({ error: 'Failed to fetch ready surveys.' });
@@ -287,6 +328,9 @@ export const getSurveyReportData = async (req, res) => {
         console.log(`[Backend] Successfully fetched report data for survey: ${surveyId}`);
         res.json(data);
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error fetching report data for survey ${req.params.surveyId}:`, errorMsg);
         res.status(500).json({ error: `Failed to fetch report data: ${errorMsg}` });
@@ -303,6 +347,9 @@ export const markSurveyComplete = async (req, res) => {
         await markSurveyCompleteService(surveyId);
         res.json({ success: true, message: 'Survey successfully marked as complete.' });
     } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error marking survey ${req.params.surveyId} as complete:`, errorMsg);
         res.status(500).json({ error: `Failed to mark survey complete: ${errorMsg}` });
