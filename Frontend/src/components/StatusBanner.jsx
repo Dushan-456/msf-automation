@@ -7,7 +7,14 @@ export default function StatusBanner({ message, isError, type = 'info' }) {
     let textColor = 'text-blue-700';
     let Icon = Info;
 
-    if (isError || type === 'error') {
+    // Detect rate-limit messages for special styling
+    const isRateLimit = typeof message === 'string' && message.includes('daily limit reached');
+
+    if (isRateLimit) {
+        bgColor = 'bg-amber-50 border-2 border-amber-400 animate-pulse';
+        textColor = 'text-amber-800';
+        Icon = AlertCircle;
+    } else if (isError || type === 'error') {
         bgColor = 'bg-red-50';
         textColor = 'text-red-700';
         Icon = AlertCircle;
@@ -19,8 +26,8 @@ export default function StatusBanner({ message, isError, type = 'info' }) {
 
     return (
         <div className={`p-4 rounded-md flex items-start gap-3 ${bgColor} ${textColor}`}>
-            <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <div className="text-sm font-medium">
+            <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isRateLimit ? 'text-amber-600' : ''}`} />
+            <div className={`text-sm font-medium ${isRateLimit ? 'font-bold' : ''}`}>
                 {message}
             </div>
         </div>
