@@ -114,7 +114,12 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
       try {
         const res = await fetch(`${API_URL}/reports/${survey.id}/data`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to fetch report data');
+        if (!res.ok) {
+          if (res.status === 429 || data?.error === 'RateLimit') {
+            throw new Error('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
+          }
+          throw new Error(data.error || 'Failed to fetch report data');
+        }
         
         if (isMounted) {
           setReportData(data);
@@ -153,7 +158,12 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
         method: 'PATCH'
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to mark as complete');
+      if (!res.ok) {
+        if (res.status === 429 || data?.error === 'RateLimit') {
+          throw new Error('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
+        }
+        throw new Error(data.error || 'Failed to mark as complete');
+      }
       
       setStep('done');
     } catch (err) {
