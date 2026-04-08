@@ -1,7 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchAnalyzedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -353,5 +353,25 @@ export const markSurveyComplete = async (req, res) => {
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error marking survey ${req.params.surveyId} as complete:`, errorMsg);
         res.status(500).json({ error: `Failed to mark survey complete: ${errorMsg}` });
+    }
+};
+
+/**
+ * GET /api/v1/reports/analyzed
+ * Returns paginated surveys from the Analyzed/Completed folder.
+ */
+export const getAnalyzedSurveys = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const perPage = parseInt(req.query.perPage, 10) || 20;
+        const data = await fetchAnalyzedSurveys(page, perPage);
+        res.json(data);
+    } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error("Error fetching analyzed surveys:", errorMsg);
+        res.status(500).json({ error: 'Failed to fetch analyzed surveys.' });
     }
 };
