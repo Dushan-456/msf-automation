@@ -538,6 +538,20 @@ export const fetchReadySurveys = async (page = 1, perPage = 50) => {
 };
 
 /**
+ * Fetches surveys from the 'Analyzed / Completed' folder (ANALYZED_FOLDER_ID).
+ * Returns all surveys sorted by response_count DESC with pagination.
+ */
+export const fetchAnalyzedSurveys = async (page = 1, perPage = 20) => {
+  const headers = getHeaders();
+  const folderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
+
+  const url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&folder_id=${folderId}&sort_by=num_responses&sort_order=DESC&include=response_count`;
+  const res = await axios.get(url, { headers });
+
+  return res.data;
+};
+
+/**
  * Fetches data needed for the PDF report: details, rollups, and bulk responses.
  */
 export const fetchSurveyReportData = async (surveyId) => {
