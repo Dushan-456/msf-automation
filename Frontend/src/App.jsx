@@ -5,6 +5,7 @@ import AutomatedCreation from './pages/AutomatedCreation';
 import AllSurveys from './pages/AllSurveys';
 import ReadyForAnalysis from './pages/ReadyForAnalysis';
 import ToBeAnalyzed from './pages/ToBeAnalyzed';
+import AnalyzedCompleted from './pages/AnalyzedCompleted';
 import Login from './pages/Login';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
               <Route path="/all-surveys" element={<AllSurveys />} />
               <Route path="/ready-for-analysis" element={<ReadyForAnalysis />} />
               <Route path="/to-be-analyzed" element={<ToBeAnalyzed />} />
+              <Route path="/analyzed-completed" element={<AnalyzedCompleted />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
