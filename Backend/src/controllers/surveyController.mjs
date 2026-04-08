@@ -1,7 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchAnalyzedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -373,5 +373,25 @@ export const getAnalyzedSurveys = async (req, res) => {
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error("Error fetching analyzed surveys:", errorMsg);
         res.status(500).json({ error: 'Failed to fetch analyzed surveys.' });
+    }
+};
+
+/**
+ * GET /api/v1/reports/completed
+ * Returns paginated surveys from the Analyzed/Completed folder (2451474).
+ */
+export const getCompletedSurveys = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const perPage = parseInt(req.query.perPage, 10) || 20;
+        const data = await fetchCompletedSurveys(page, perPage);
+        res.json(data);
+    } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error("Error fetching completed surveys:", errorMsg);
+        res.status(500).json({ error: 'Failed to fetch completed surveys.' });
     }
 };
