@@ -67,8 +67,8 @@ export default function ReadyForAnalysis() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-12">
-      <div className="mb-8 shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="p-5 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-6">
+      <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 border-b-4 border-blue-500 pb-2 inline-block">
             Ready for Analysis
@@ -213,8 +213,11 @@ export default function ReadyForAnalysis() {
                     >
                       {survey.title}
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
                       ID: {survey.id}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        To Be Analyzed
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -258,15 +261,15 @@ export default function ReadyForAnalysis() {
 
       {/* Pagination controls */}
       {!loading && !error && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-6 py-4 mt-6 flex items-center justify-between shrink-0">
-          <div className="text-sm font-medium text-slate-500">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 px-4 py-2.5 mt-3 flex items-center justify-between shrink-0">
+          <div className="text-xs font-medium text-slate-500">
             Page <span className="text-slate-900 font-bold">{page}</span>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={handlePrevious}
               disabled={page === 1}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 page === 1
                   ? "bg-slate-50 text-slate-300 cursor-not-allowed"
                   : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
@@ -277,7 +280,7 @@ export default function ReadyForAnalysis() {
             <button
               onClick={handleNext}
               disabled={surveys.length < perPage}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 surveys.length < perPage
                   ? "bg-slate-50 text-slate-300 cursor-not-allowed"
                   : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
