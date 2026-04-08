@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReportActionModal from '../components/ReportActionModal';
+import SurveyDetailModal from '../components/SurveyDetailModal';
 
 const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
   ? import.meta.env.VITE_API_URL
@@ -15,6 +16,10 @@ export default function ReadyForAnalysis() {
   
   const [selectedSurvey, setSelectedSurvey] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Detail modal state (tracking / reminders)
+  const [detailSurvey, setDetailSurvey] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const fetchReadySurveys = async (pageNum) => {
     try {
@@ -180,7 +185,8 @@ export default function ReadyForAnalysis() {
             {surveys.map((survey) => (
               <div
                 key={survey.id}
-                className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex items-center justify-between group relative overflow-hidden"
+                onClick={() => { setDetailSurvey(survey); setDetailOpen(true); }}
+                className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex items-center justify-between group relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -224,7 +230,7 @@ export default function ReadyForAnalysis() {
                   </div>
                   <div className="shrink-0 flex items-center">
                     <button
-                      onClick={() => handleAnalyzeClick(survey)}
+                      onClick={(e) => { e.stopPropagation(); handleAnalyzeClick(survey); }}
                       className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
                     >
                       <svg
@@ -290,6 +296,13 @@ export default function ReadyForAnalysis() {
           onComplete={handleAnalysisComplete}
         />
       )}
+
+      {/* Survey Detail / Tracking Modal */}
+      <SurveyDetailModal
+        survey={detailSurvey}
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
     </div>
   );
 }
