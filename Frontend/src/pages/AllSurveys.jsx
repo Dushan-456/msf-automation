@@ -207,22 +207,23 @@ const AllSurveys = () => {
       const emailLabel = formatLabel(r.email_status);
       const responseLabel = formatLabel(r.response_status || 'not responded');
       return `<tr>
-        <td style="border:1px solid #e2e8f0;padding:8px 12px;font-size:14px;color:#334155;">${r.email}</td>
-        <td style="border:1px solid #e2e8f0;padding:8px 12px;font-size:14px;color:${getEmailStatusColor(r.email_status)};font-weight:600;">${emailLabel}</td>
-        <td style="border:1px solid #e2e8f0;padding:8px 12px;font-size:14px;color:${getResponseStatusColor(r.response_status)};font-weight:600;">${responseLabel}</td>
+        <td style="border:1px solid #e2e8f0;padding:6px 10px;font-size:13px;color:#334155;word-break:break-all;">${r.email}</td>
+        <td style="border:1px solid #e2e8f0;padding:6px 10px;font-size:13px;color:${getEmailStatusColor(r.email_status)};font-weight:600;white-space:nowrap;">${emailLabel}</td>
+        <td style="border:1px solid #e2e8f0;padding:6px 10px;font-size:13px;color:${getResponseStatusColor(r.response_status)};font-weight:600;white-space:nowrap;">${responseLabel}</td>
       </tr>`;
     }).join('');
 
-    const htmlString = `<table style="border-collapse:collapse;width:100%;font-family:Arial,Helvetica,sans-serif;">
+    const htmlString = `<div style="max-width:600px;overflow-x:auto;">
+      <table style="border-collapse:collapse;width:auto;font-family:Arial,Helvetica,sans-serif;font-size:13px;">
       <thead>
         <tr style="background-color:#f1f5f9;">
-          <th style="border:1px solid #cbd5e1;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Email</th>
-          <th style="border:1px solid #cbd5e1;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Email Status</th>
-          <th style="border:1px solid #cbd5e1;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Response Status</th>
+          <th style="border:1px solid #cbd5e1;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Email</th>
+          <th style="border:1px solid #cbd5e1;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;">Email Status</th>
+          <th style="border:1px solid #cbd5e1;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;">Response Status</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table></div>`;
 
     const plainText = filteredRecipients.map(r =>
       `${r.email}\t${formatLabel(r.email_status)}\t${formatLabel(r.response_status || 'not responded')}`
@@ -271,7 +272,7 @@ const AllSurveys = () => {
       <div className="mb-8 shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">
-            Dashboard
+            All MSF Surveys
           </h1>
           <p className="text-slate-500 mt-2 text-lg">
             Manage all your surveys, monitor responses, and send reminders.
@@ -548,21 +549,20 @@ const AllSurveys = () => {
               </svg>
             </button>
 
-              <div className="flex items-start justify-between gap-6 px-8 pt-8">
-                <div className="shrink-0 text-center bg-slate-300 p-2 rounded-lg">
-                  <p className="text-xs text-slate-500 mb-0.5">
-                    Current Responses
-                  </p>
-                  <span className="text-3xl font-extrabold text-blue-600">
-                    {selectedSurvey.response_count}
-                  </span>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-800 leading-tight flex-1">
-                  {selectedSurvey.title}
-                </h2>
+            <div className="flex items-start justify-between gap-6 px-8 pt-8">
+              <div className="shrink-0 text-center bg-slate-300 p-2 rounded-lg">
+                <p className="text-xs text-slate-500 mb-0.5">
+                  Current Responses
+                </p>
+                <span className="text-3xl font-extrabold text-blue-600">
+                  {selectedSurvey.response_count}
+                </span>
               </div>
+              <h2 className="text-2xl font-bold text-slate-800 leading-tight flex-1">
+                {selectedSurvey.title}
+              </h2>
+            </div>
             <div className="px-8 pb-4 flex-1 overflow-y-auto">
-
               <p className="mt-6 text-slate-600 text-sm leading-relaxed">
                 You are about to automate sending an email reminder to all
                 recipients who have{" "}
@@ -575,35 +575,66 @@ const AllSurveys = () => {
 
               {/* ── Collector Tabs + Email Tracking ── */}
               <div className="mt-6 max-w-4xl mx-auto w-full">
-
                 {/* Section header */}
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
                     Email Tracking
                   </h3>
-                  {!collectorsLoading && !trackingLoading && selectedCollector && (
-                    <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                      {filteredRecipients.length} / {recipients.length} shown
-                    </span>
-                  )}
+                  {!collectorsLoading &&
+                    !trackingLoading &&
+                    selectedCollector && (
+                      <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                        {filteredRecipients.length} / {recipients.length} shown
+                      </span>
+                    )}
                 </div>
 
                 {/* Collector picker */}
                 {collectorsLoading ? (
                   <div className="flex items-center gap-2 mb-3 text-slate-400 text-sm">
-                    <svg className="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4 text-blue-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Loading collectors...
                   </div>
                 ) : collectors.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-slate-400 border border-slate-100 rounded-xl bg-slate-50">
-                    <svg className="w-8 h-8 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <svg
+                      className="w-8 h-8 mb-2 text-slate-300"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
                     </svg>
-                    <p className="text-sm font-medium">No Email Collectors Found</p>
-                    <p className="text-xs mt-0.5">No email collectors are linked to this survey.</p>
+                    <p className="text-sm font-medium">
+                      No Email Collectors Found
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      No email collectors are linked to this survey.
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -612,24 +643,31 @@ const AllSurveys = () => {
                       {collectors.map((c) => {
                         const isActive = selectedCollector?.id === c.id;
                         const statusDot =
-                          c.status === 'open' ? 'bg-emerald-400'
-                          : c.status === 'closed' ? 'bg-red-400'
-                          : c.status === 'paused' ? 'bg-amber-400'
-                          : 'bg-slate-400';
+                          c.status === "open"
+                            ? "bg-emerald-400"
+                            : c.status === "closed"
+                              ? "bg-red-400"
+                              : c.status === "paused"
+                                ? "bg-amber-400"
+                                : "bg-slate-400";
                         return (
                           <button
                             key={c.id}
                             onClick={() => setSelectedCollector(c)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                               isActive
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600"
                             }`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-white' : statusDot}`}></span>
-                            {c.name ?? 'Unnamed Collector'}
-                            <span className={`ml-0.5 capitalize opacity-75 ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>
-                              · {c.type ?? 'email'}
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-white" : statusDot}`}
+                            ></span>
+                            {c.name ?? "Unnamed Collector"}
+                            <span
+                              className={`ml-0.5 capitalize opacity-75 ${isActive ? "text-blue-200" : "text-slate-400"}`}
+                            >
+                              · {c.type ?? "email"}
                             </span>
                           </button>
                         );
@@ -666,22 +704,42 @@ const AllSurveys = () => {
                           onClick={handleCopyTable}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${
                             copied
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow'
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow"
                           }`}
                           title="Copy table as formatted HTML for email"
                         >
                           {copied ? (
                             <>
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                               Copied!
                             </>
                           ) : (
                             <>
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                />
                               </svg>
                               Copy Table
                             </>
@@ -714,7 +772,9 @@ const AllSurveys = () => {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
-                          <span className="text-sm">Loading tracking data...</span>
+                          <span className="text-sm">
+                            Loading tracking data...
+                          </span>
                         </div>
                       ) : filteredRecipients.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-slate-400">
@@ -731,7 +791,9 @@ const AllSurveys = () => {
                               d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                             />
                           </svg>
-                          <p className="text-sm font-medium">No recipients found</p>
+                          <p className="text-sm font-medium">
+                            No recipients found
+                          </p>
                         </div>
                       ) : (
                         <table className="w-full text-sm">
@@ -766,7 +828,8 @@ const AllSurveys = () => {
                                 r.response_status === "completely_responded"
                                   ? "text-emerald-700 bg-emerald-50"
                                   : r.response_status === "partial" ||
-                                      r.response_status === "partially_completed"
+                                      r.response_status ===
+                                        "partially_completed"
                                     ? "text-amber-700 bg-amber-50"
                                     : r.response_status === "not_responded" ||
                                         !r.response_status
