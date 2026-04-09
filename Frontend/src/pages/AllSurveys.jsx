@@ -229,6 +229,36 @@ const AllSurveys = () => {
       `${r.email}\t${formatLabel(r.email_status)}\t${formatLabel(r.response_status || 'not responded')}`
     ).join('\n');
 
+    // Method 1: Selection API + execCommand (most reliable for rich HTML in modals)
+    try {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlString;
+      tempDiv.style.position = 'fixed';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.opacity = '0';
+      document.body.appendChild(tempDiv);
+
+      const range = document.createRange();
+      range.selectNodeContents(tempDiv);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      const success = document.execCommand('copy');
+      selection.removeAllRanges();
+      document.body.removeChild(tempDiv);
+
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+    } catch (err) {
+      console.warn('execCommand copy failed, trying Clipboard API:', err);
+    }
+
+    // Method 2: Clipboard API with ClipboardItem (fallback)
     try {
       await navigator.clipboard.write([
         new ClipboardItem({
@@ -239,14 +269,14 @@ const AllSurveys = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy table:', err);
-      // Fallback to plain text
+      console.error('Clipboard API failed:', err);
+      // Method 3: Plain text fallback
       try {
         await navigator.clipboard.writeText(plainText);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (e) {
-        console.error('Fallback clipboard write failed:', e);
+        console.error('All clipboard methods failed:', e);
       }
     }
   };
