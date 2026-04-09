@@ -209,14 +209,14 @@ export const sendReminders = async (req, res) => {
  */
 export const processManualEntry = async (req, res) => {
     try {
-        const { doctorName, doctorEmail, trainerName, specialty, level, emails } = req.body;
+        const { doctorName, doctorEmail, trainerName, specialty, level, emails, slmc } = req.body;
         
         if (!doctorName || !emails) {
             return res.status(400).json({ error: "Missing required fields (doctorName, emails)." });
         }
 
         // Run the workflow
-        await processSurveyMonkeyWorkflow({ doctorName, trainerName, specialty, level, emails });
+        await processSurveyMonkeyWorkflow({ doctorName, trainerName, specialty, level, emails, slmc });
         
         // Send notification email
         if (doctorEmail) {
