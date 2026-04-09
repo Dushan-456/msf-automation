@@ -12,6 +12,7 @@ export default function ReadyForAnalysis() {
   const [error, setError] = useState(null);
   
   const [page, setPage] = useState(1);
+  const [fetchedCount, setFetchedCount] = useState(0);
   const perPage = 10;
   
   const [selectedSurvey, setSelectedSurvey] = useState(null);
@@ -39,6 +40,7 @@ export default function ReadyForAnalysis() {
         throw new Error(data.error || 'Failed to fetch');
       }
       setSurveys(data);
+      setFetchedCount(data.length);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -55,7 +57,7 @@ export default function ReadyForAnalysis() {
   };
 
   const handleNext = () => {
-    if (surveys.length === perPage) {
+    if (fetchedCount >= perPage) {
       setPage(page + 1);
     }
   };
@@ -66,8 +68,8 @@ export default function ReadyForAnalysis() {
   };
 
   const handleAnalysisComplete = () => {
-    // Remove the survey from the list locally after completion
-    setSurveys(prev => prev.filter(s => s.id !== selectedSurvey.id));
+    // Re-fetch current page so pagination stays in sync
+    fetchReadySurveys(page);
   };
 
   const handleAnalyzeInSM = async (e, survey) => {
@@ -88,10 +90,10 @@ export default function ReadyForAnalysis() {
       if (data.analyze_url) {
         window.open(data.analyze_url, '_blank');
       }
-      // Remove survey from local list (it's been moved)
-      setSurveys(prev => prev.filter(s => s.id !== survey.id));
       setToast({ show: true, message: `"${survey.title}" moved to Analyzed & Completed.`, type: 'success' });
       setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+      // Re-fetch current page so pagination stays in sync
+      fetchReadySurveys(page);
     } catch (err) {
       console.error('Analyze in SM error:', err);
       setToast({ show: true, message: 'Network error. Please try again.', type: 'error' });
@@ -326,9 +328,9 @@ export default function ReadyForAnalysis() {
             </button>
             <button
               onClick={handleNext}
-              disabled={surveys.length < perPage}
+              disabled={fetchedCount < perPage}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                surveys.length < perPage
+                fetchedCount < perPage
                   ? "bg-slate-50 text-slate-300 cursor-not-allowed"
                   : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
               }`}
