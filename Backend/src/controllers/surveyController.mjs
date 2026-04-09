@@ -1,7 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, getSurveyAnalyzeUrl, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -353,6 +353,29 @@ export const markSurveyComplete = async (req, res) => {
         const errorMsg = error.response?.data?.error?.message || error.message;
         console.error(`Error marking survey ${req.params.surveyId} as complete:`, errorMsg);
         res.status(500).json({ error: `Failed to mark survey complete: ${errorMsg}` });
+    }
+};
+
+/**
+ * POST /api/v1/surveys/:surveyId/analyze-in-sm
+ * Returns the SM analyze URL and moves the survey to the analyzed folder.
+ */
+export const analyzeInSM = async (req, res) => {
+    try {
+        const { surveyId } = req.params;
+        // Fetch analyze URL and move to completed folder in parallel
+        const [urlData] = await Promise.all([
+            getSurveyAnalyzeUrl(surveyId),
+            markSurveyCompleteService(surveyId),
+        ]);
+        res.json({ success: true, analyze_url: urlData.analyze_url });
+    } catch (error) {
+        if (error.response?.status === 429) {
+            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
+        }
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        console.error(`Error analyzing survey ${req.params.surveyId} in SM:`, errorMsg);
+        res.status(500).json({ error: `Failed to analyze in SM: ${errorMsg}` });
     }
 };
 
