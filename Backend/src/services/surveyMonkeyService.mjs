@@ -20,7 +20,7 @@ export const fetchAllSurveys = async (page = 1, perPage = 20, searchQuery = '') 
 };
 
 export const processSurveyMonkeyWorkflow = async (data) => {
-  const { doctorName, trainerName, specialty, level, emails } = data;
+  const { doctorName, trainerName, specialty, level, emails, slmc } = data;
 
   if (!emails || emails.trim() === "") {
     throw new Error(
@@ -32,7 +32,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
   const headers = getHeaders();
 
   // Step 1: Copy Survey
-  const title = `Multisource Feedback Form (MSF) ${doctorName} Trainer - ${trainerName} Specialty - ${specialty} ( ${level} )`;
+  const title = `Multisource Feedback Form (MSF) ${doctorName} - SLMC - ${slmc || ''} Trainer - ${trainerName} Specialty - ${specialty} ( ${level} )`;
   
   const payload = { from_survey_id: baseTemplateId, title: title };
   if (process.env.TO_BE_ANALYZE_FOLDER_ID) {
@@ -58,7 +58,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
     pageId = detailsRes.data.pages[0].id;
 
     // Step 3: Update Page Description
-    const descriptionHtml = `<div>${doctorName}<br>Trainer - ${trainerName}<br>Specialty - ${specialty} ( ${level} )</div>`;
+    const descriptionHtml = `<div>${doctorName}<br>SLMC - ${slmc || ''}<br>Trainer - ${trainerName}<br>Specialty - ${specialty} ( ${level} )</div>`;
     await axios.patch(
       `https://api.surveymonkey.com/v3/surveys/${newSurveyId}/pages/${pageId}`,
       { description: descriptionHtml },
