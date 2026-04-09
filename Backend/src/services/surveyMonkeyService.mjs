@@ -585,6 +585,21 @@ export const fetchSurveyReportData = async (surveyId) => {
 };
 
 /**
+ * Fetches the SurveyMonkey analyze page URL for a given survey.
+ */
+export const getSurveyAnalyzeUrl = async (surveyId) => {
+  const headers = getHeaders();
+  const res = await axios.get(
+    `https://api.surveymonkey.com/v3/surveys/${surveyId}/details`,
+    { headers }
+  );
+  return {
+    analyze_url: res.data.analyze_url,
+    preview_url: res.data.preview,
+  };
+};
+
+/**
  * Marks a survey as complete by moving it to the 'Completed' folder (ID 2451474).
  */
 export const markSurveyComplete = async (surveyId) => {
