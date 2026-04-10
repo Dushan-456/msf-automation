@@ -23,6 +23,9 @@ export default function SubjectSettings() {
   const [arEmailSaved, setArEmailSaved] = useState('');
   const [savingAr, setSavingAr] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     fetchSubjects();
     fetchGlobalSettings();
@@ -125,6 +128,11 @@ export default function SubjectSettings() {
       showToast(err.response?.data?.error || 'Failed to delete subject.', 'error');
     }
   };
+
+  const filteredSubjects = subjects.filter(subject => 
+    subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    subject.clerkEmail.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="p-5 max-w-5xl mx-auto pt-6">
@@ -269,23 +277,51 @@ export default function SubjectSettings() {
         {/* Subject List */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-800">
+            <div className="px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800 shrink-0">
                 All Subjects
                 <span className="ml-2 text-sm font-normal text-gray-500">
-                  ({subjects.length})
+                  ({filteredSubjects.length}{searchQuery ? ` of ${subjects.length}` : ''})
                 </span>
               </h3>
-              <button
-                onClick={fetchSubjects}
-                disabled={loading}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
+              
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search subjects..."
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  onClick={fetchSubjects}
+                  disabled={loading}
+                  className="flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
+                  title="Refresh"
+                >
+                  <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {loading ? (
@@ -304,9 +340,16 @@ export default function SubjectSettings() {
                 <p className="text-sm font-medium text-gray-500">No subjects yet</p>
                 <p className="text-xs text-gray-400 mt-1">Add your first subject using the form.</p>
               </div>
+            ) : filteredSubjects.length === 0 ? (
+              <div className="p-12 flex flex-col items-center justify-center text-gray-400">
+                <svg className="w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <p className="text-sm font-medium text-gray-500">No subjects matched your search</p>
+              </div>
             ) : (
-              <div className="divide-y divide-gray-50">
-                {subjects.map((subject) => (
+              <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                {filteredSubjects.map((subject) => (
                   <div
                     key={subject._id}
                     className={`px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group ${
