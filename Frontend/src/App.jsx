@@ -6,6 +6,8 @@ import AllSurveys from './pages/AllSurveys';
 import ReadyForAnalysis from './pages/ReadyForAnalysis';
 import ToBeAnalyzed from './pages/ToBeAnalyzed';
 import AnalyzedCompleted from './pages/AnalyzedCompleted';
+import SubjectUpload from './pages/SubjectUpload';
+import SubjectSettings from './pages/SubjectSettings';
 import Login from './pages/Login';
 
 function App() {
@@ -45,6 +47,8 @@ function App() {
               <Route path="/ready-for-analysis" element={<ReadyForAnalysis />} />
               <Route path="/to-be-analyzed" element={<ToBeAnalyzed />} />
               <Route path="/analyzed-completed" element={<AnalyzedCompleted />} />
+              <Route path="/subject-upload" element={<SubjectUpload />} />
+              <Route path="/subject-settings" element={<SubjectSettings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
