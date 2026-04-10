@@ -15,8 +15,8 @@ const Sidebar = ({ onLogout }) => {
   ];
 
   const subjectNavItems = [
-    { name: "Subject Upload", path: "/subject-upload" },
-    { name: "Subject Settings", path: "/subject-settings" },
+    { name: "Reports Upload & Send", path: "/subject-upload" },
+    { name: "BOS Subject Settings", path: "/subject-settings" },
   ];
 
   const getIcon = (path) => {
