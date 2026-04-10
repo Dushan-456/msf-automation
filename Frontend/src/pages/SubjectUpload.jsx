@@ -1,0 +1,310 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
+  ? import.meta.env.VITE_API_URL
+  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
+
+export default function SubjectUpload() {
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [files, setFiles] = useState([]);
+  const [uploadToDrive, setUploadToDrive] = useState(true); // Default to true
+  const [loading, setLoading] = useState(false);
+  const [fetchingSubjects, setFetchingSubjects] = useState(true);
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [driveResults, setDriveResults] = useState([]);
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  const fetchSubjects = async () => {
+    try {
+      setFetchingSubjects(true);
+      const res = await axios.get(`${API_URL}/subjects`);
+      setSubjects(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch subjects:', err);
+      showToast('Failed to load subjects.', 'error');
+    } finally {
+      setFetchingSubjects(false);
+    }
+  };
+
+  const showToast = (message, type) => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 5000);
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    
+    // Filter only PDFs
+    const validFiles = selectedFiles.filter(f => f.type === 'application/pdf');
+    if (validFiles.length !== selectedFiles.length) {
+      showToast('Some files were skipped. Only PDF files are allowed.', 'error');
+    }
+
+    if (validFiles.length > 0) {
+      setFiles(prev => [...prev, ...validFiles]);
+      setDriveResults([]);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    
+    // Filter only PDFs
+    const validFiles = droppedFiles.filter(f => f.type === 'application/pdf');
+    if (validFiles.length !== droppedFiles.length) {
+      showToast('Some files were skipped. Only PDF files are allowed.', 'error');
+    }
+
+    if (validFiles.length > 0) {
+      setFiles(prev => [...prev, ...validFiles]);
+      setDriveResults([]);
+    }
+  };
+
+  const removeFile = (indexToRemove) => {
+    setFiles(files.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedSubjectId || files.length === 0) return;
+
+    setLoading(true);
+    setDriveResults([]);
+
+    const formData = new FormData();
+    formData.append('subjectId', selectedSubjectId);
+    formData.append('uploadToDrive', uploadToDrive.toString());
+    
+    files.forEach(file => {
+        formData.append('pdfFiles', file);
+    });
+
+    try {
+      const res = await axios.post(`${API_URL}/subjects/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      showToast(res.data.message || 'Success!', 'success');
+      setDriveResults(res.data.driveFiles || []);
+      setFiles([]);
+      setSelectedSubjectId('');
+      // Reset file input
+      const fileInput = document.getElementById('pdf-file-input');
+      if (fileInput) fileInput.value = '';
+    } catch (err) {
+      console.error('Upload error:', err);
+      showToast(err.response?.data?.error || 'Upload failed. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectedSubject = subjects.find(s => s._id === selectedSubjectId);
+
+  return (
+    <div className="p-5 max-w-4xl mx-auto pt-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 border-b-4 border-violet-500 pb-2 inline-block">
+          Subject Upload
+        </h1>
+        <p className="text-gray-500 mt-2">
+          Upload PDF(s) and send them to the relevant registrar via email. Optionally save to Google Drive.
+        </p>
+      </div>
+
+      {/* Toast */}
+      {toast.show && (
+        <div className={`mb-6 p-4 rounded-lg border text-sm font-medium transition-all ${
+          toast.type === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-red-50 text-red-600 border-red-200'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Subject Dropdown */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Subject
+            </label>
+            {fetchingSubjects ? (
+              <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading subjects...
+              </div>
+            ) : subjects.length === 0 ? (
+              <div className="bg-amber-50 text-amber-700 p-3 rounded-lg border border-amber-200 text-sm">
+                No subjects found. Please add subjects in{' '}
+                <a href="/subject-settings" className="font-bold underline hover:text-amber-800">Subject Settings</a> first.
+              </div>
+            ) : (
+              <select
+                value={selectedSubjectId}
+                onChange={(e) => setSelectedSubjectId(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white text-gray-700 text-sm"
+              >
+                <option value="" disabled>-- Choose a subject --</option>
+                {subjects.map((subject) => (
+                  <option key={subject._id} value={subject._id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Subject Info Card */}
+          {selectedSubject && (
+            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <div className="text-sm">
+                <div>
+                  <span className="text-violet-500 font-medium">Clerk (CC):</span>
+                  <span className="text-gray-800 font-semibold ml-2">{selectedSubject.clerkEmail}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Drive Upload Toggle */}
+          <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+             <input 
+                type="checkbox" 
+                id="uploadToDrive"
+                checked={uploadToDrive}
+                onChange={(e) => setUploadToDrive(e.target.checked)}
+                className="w-5 h-5 text-violet-600 rounded border-gray-300 focus:ring-violet-500 cursor-pointer"
+             />
+             <label htmlFor="uploadToDrive" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                Upload to Google Drive <span className="text-gray-400 font-normal ml-1">(Requires fixing quota issue if checked)</span>
+             </label>
+          </div>
+
+          {/* PDF Upload Zone */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Upload PDF(s)
+            </label>
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center transition-colors cursor-pointer hover:bg-gray-50 hover:border-violet-400"
+              onClick={() => document.getElementById('pdf-file-input')?.click()}
+            >
+              <input
+                id="pdf-file-input"
+                type="file"
+                multiple
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div className="flex flex-col items-center text-center pointer-events-none">
+                <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm font-medium text-gray-700">Drag &amp; drop PDF files here</p>
+                <p className="text-xs text-gray-500 mt-1">or click to browse</p>
+              </div>
+            </div>
+
+            {/* Selected Files List */}
+            {files.length > 0 && (
+                <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700">Selected Files ({files.length}):</h4>
+                    <ul className="space-y-2">
+                        {files.map((f, i) => (
+                            <li key={i} className="flex items-center justify-between bg-violet-50 border border-violet-100 px-4 py-2 rounded-lg text-sm">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <svg className="w-5 h-5 text-violet-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    <span className="text-gray-700 font-medium truncate">{f.name}</span>
+                                    <span className="text-xs text-gray-400 shrink-0">({(f.size / 1024).toFixed(1)} KB)</span>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => removeFile(i)}
+                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                    title="Remove file"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || !selectedSubjectId || files.length === 0}
+            className={`w-full py-3.5 px-4 rounded-lg text-white font-bold text-base transition-all ${
+              loading || !selectedSubjectId || files.length === 0
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-violet-600 hover:bg-violet-700 shadow-md hover:shadow-lg'
+            }`}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-3">
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Send {uploadToDrive ? '& Upload ' : ''}({files.length} {files.length === 1 ? 'file' : 'files'})
+              </span>
+            )}
+          </button>
+        </form>
+
+        {/* Drive Result Card */}
+        {driveResults.length > 0 && (
+          <div className="mt-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+            <h3 className="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Google Drive Uploads Successful
+            </h3>
+            <ul className="text-sm text-emerald-700 space-y-2">
+              {driveResults.map((result, idx) => (
+                  <li key={idx} className="flex items-center justify-between border-b border-emerald-100 pb-2 last:border-0 last:pb-0">
+                    <span className="font-medium truncate mr-2">{result.name}</span>
+                    {result.webViewLink && (
+                        <a href={result.webViewLink} target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-900 shrink-0 text-xs">
+                          Open link
+                        </a>
+                    )}
+                  </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
