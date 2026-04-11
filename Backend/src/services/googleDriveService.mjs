@@ -1,22 +1,24 @@
 import { google } from 'googleapis';
 import fs from 'fs';
-import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /**
- * Creates an authenticated Google Drive client using a Service Account.
+ * Creates an authenticated Google Drive client using OAuth2 Refresh Token.
  */
 const getDriveClient = () => {
-    const keyFilePath = path.resolve(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE || './service-account.json');
+    const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+    );
 
-    const auth = new google.auth.GoogleAuth({
-        keyFile: keyFilePath,
-        scopes: ['https://www.googleapis.com/auth/drive']
+    oauth2Client.setCredentials({
+        refresh_token: process.env.GOOGLE_REFRESH_TOKEN
     });
 
-    return google.drive({ version: 'v3', auth });
+    return google.drive({ version: 'v3', auth: oauth2Client });
 };
 
 /**
@@ -60,11 +62,14 @@ export const getOrCreateFolder = async (parentId, folderName) => {
 };
 
 /**
- * Orchestrates the nested folder structure: root → date folder → subject folder.
- * Returns the subject folder ID.
+ * Orchestrates the nested folder structure:
+ *   root → year → month+year → date → subject
+ *
+ * Example hierarchy:
+ *   Root / 2026 / April 2026 / 2026-04-11 / Anatomy
  *
  * @param {string} subjectName - The name of the subject.
- * @returns {Promise<string>} The subject folder ID inside today's date folder.
+ * @returns {Promise<string>} The subject folder ID at the bottom of the tree.
  */
 export const getNestedSubjectFolder = async (subjectName) => {
     const rootFolderId = process.env.GDRIVE_ROOT_FOLDER_ID;
@@ -73,11 +78,21 @@ export const getNestedSubjectFolder = async (subjectName) => {
         throw new Error('GDRIVE_ROOT_FOLDER_ID is not set in environment variables.');
     }
 
-    // Step 1: Get or create today's date folder (YYYY-MM-DD)
-    const today = new Date().toISOString().slice(0, 10); // e.g. "2026-04-10"
-    const dateFolderId = await getOrCreateFolder(rootFolderId, today);
+    const now = new Date();
 
-    // Step 2: Get or create the subject folder inside the date folder
+    // Level 1: Year folder — e.g. "2026"
+    const year = now.getFullYear().toString(); // "2026"
+    const yearFolderId = await getOrCreateFolder(rootFolderId, year);
+
+    // Level 2: Month & Year folder — e.g. "April 2026"
+    const monthYear = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(now);
+    const monthFolderId = await getOrCreateFolder(yearFolderId, monthYear);
+
+    // Level 3: Date folder — e.g. "2026-04-11"
+    const dateStr = now.toISOString().slice(0, 10);
+    const dateFolderId = await getOrCreateFolder(monthFolderId, dateStr);
+
+    // Level 4: Subject folder — e.g. "Anatomy"
     const subjectFolderId = await getOrCreateFolder(dateFolderId, subjectName);
 
     return subjectFolderId;
