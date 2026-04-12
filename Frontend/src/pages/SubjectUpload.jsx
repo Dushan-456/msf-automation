@@ -192,7 +192,7 @@ export default function SubjectUpload() {
             <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
               <div className="text-sm">
                 <div>
-                  <span className="text-violet-500 font-medium">Subject Clerk (CC):</span>
+                  <span className="text-violet-500 font-medium">BOS Email (CC):</span>
                   <span className="text-gray-800 font-semibold ml-2">{selectedSubject.clerkEmail}</span>
                 </div>
               </div>
