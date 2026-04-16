@@ -17,3 +17,33 @@
   --background: 17 24 39; /* gray-900 */
   --foreground: 243 244 246; /* gray-100 */
 }
+
+/* ── Modern Custom Scrollbar ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
