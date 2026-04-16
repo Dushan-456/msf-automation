@@ -59,7 +59,7 @@ function App() {
         <Sidebar onLogout={handleLogout} />
         
         {/* Main Content Area */}
-        <div className="flex-1 ml-64 min-h-screen flex flex-col overflow-x-hidden">
+        <div className="flex-1 ml-64 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
           <TopHeader theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} />
           
           <main className="flex-1 w-full p-6">
