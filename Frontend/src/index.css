@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
+:root {
+  --background: 255 255 255;
+  --foreground: 10 10 10;
+}
+
+.dark {
+  --background: 17 24 39; /* gray-900 */
+  --foreground: 243 244 246; /* gray-100 */
+}
