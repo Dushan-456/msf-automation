@@ -21,8 +21,8 @@ export default function FileUploadZone({ file, setFile, disabled }) {
   return (
     <div 
       {...getRootProps()} 
-      className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors cursor-pointer
-        ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:bg-gray-50'}
+      className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all cursor-pointer
+        ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
     >
@@ -30,18 +30,18 @@ export default function FileUploadZone({ file, setFile, disabled }) {
       
       {file ? (
         <div className="flex flex-col items-center text-center">
-          <FileType className="w-12 h-12 text-blue-500 mb-3" />
-          <p className="text-sm font-semibold text-gray-700">{file.name}</p>
-          <p className="text-xs text-gray-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
-          {!disabled && <p className="text-xs text-blue-600 mt-2 hover:underline">Click or drag to replace</p>}
+          <FileType className="w-12 h-12 text-blue-500 dark:text-blue-400 mb-3" />
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{file.name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+          {!disabled && <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 hover:underline">Click or drag to replace</p>}
         </div>
       ) : (
         <div className="flex flex-col items-center text-center">
-          <UploadCloud className={`w-12 h-12 mb-3 ${isDragActive ? 'text-blue-500' : 'text-gray-400'}`} />
-          <p className="text-sm font-medium text-gray-700">
+          <UploadCloud className={`w-12 h-12 mb-3 ${isDragActive ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'}`} />
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
             {isDragActive ? "Drop the CSV file here..." : "Drag & drop your CSV file here"}
           </p>
-          <p className="text-xs text-gray-500 mt-1">or click to browse files</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">or click to browse files</p>
         </div>
       )}
     </div>
