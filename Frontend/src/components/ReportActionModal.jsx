@@ -174,41 +174,41 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-800/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative transform transition-all">
+      <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative transform transition-all border border-gray-100 dark:border-gray-800">
         <div className="p-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">Processing Report</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">Processing Report</h3>
           
           <div className="flex flex-col items-center justify-center space-y-6 min-h-[150px]">
             {step === 'fetching' && (
               <>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                <p className="text-gray-600 font-medium">Analyzing data...</p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium">Analyzing data...</p>
               </>
             )}
 
             {step === 'printing' && (
               <>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                <p className="text-gray-600 font-medium">Generating PDF...</p>
-                <p className="text-sm text-gray-400 text-center">Your PDF report is downloading.<br/>This may take a moment.</p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium">Generating PDF...</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center">Your PDF report is downloading.<br/>This may take a moment.</p>
               </>
             )}
 
             {step === 'finalizing' && (
               <>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-                <p className="text-gray-600 font-medium">Wrapping up...</p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium">Wrapping up...</p>
               </>
             )}
 
             {step === 'done' && (
               <>
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-2">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-2 transition-colors">
+                  <svg className="w-8 h-8 text-green-600 dark:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                 </div>
-                <p className="text-xl text-gray-900 font-bold">Complete!</p>
-                <p className="text-sm text-gray-500 text-center">The report was successfully generated and moved to the completed folder.</p>
+                <p className="text-xl text-gray-900 dark:text-white font-bold">Complete!</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">The report was successfully generated and moved to the completed folder.</p>
                 <div className="mt-4 w-full px-4">
                   <button onClick={() => { onComplete(); onClose(); }} className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                     OK
@@ -219,13 +219,13 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
 
             {step === 'error' && (
               <>
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-2">
-                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-2 transition-colors">
+                  <svg className="w-8 h-8 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </div>
-                <p className="text-xl text-gray-900 font-bold">Error</p>
-                <p className="text-sm text-red-500 text-center px-4">{errorMsg}</p>
+                <p className="text-xl text-gray-900 dark:text-white font-bold">Error</p>
+                <p className="text-sm text-red-500 dark:text-red-400 text-center px-4">{errorMsg}</p>
                 <div className="mt-4 w-full px-4 flex gap-3">
-                  <button onClick={onClose} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors">
+                  <button onClick={onClose} className="flex-1 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors">
                     Cancel
                   </button>
                   {/* Provide manual download fallback if data is loaded but something failed later */}
