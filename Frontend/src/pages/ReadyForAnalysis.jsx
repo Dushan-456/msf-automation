@@ -104,20 +104,20 @@ export default function ReadyForAnalysis() {
   };
 
   return (
-    <div className="p-5 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-6">
+    <div className="p-5 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 border-b-4 border-blue-500 pb-2 inline-block">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white border-b-4 border-blue-500 pb-2 inline-block">
             Ready for Analysis
           </h1>
-          <p className="text-gray-500 mt-2">
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
             Surveys with 12 or more responses ready for report generation.
           </p>
         </div>
         <button
           onClick={() => fetchReadySurveys(page)}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50"
         >
           {loading ? (
             <svg
@@ -160,7 +160,7 @@ export default function ReadyForAnalysis() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 border border-red-200">
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg mb-6 border border-red-200 dark:border-red-800">
           <strong>Error: </strong> {error}
         </div>
       )}
@@ -189,16 +189,16 @@ export default function ReadyForAnalysis() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              <p className="text-slate-500 font-medium text-lg">
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">
                 Loading surveys...
               </p>
             </div>
           </div>
         </div>
       ) : surveys.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 bg-white rounded-2xl border border-slate-100 shadow-sm py-16">
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 bg-white dark:bg-gray-900 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm py-16">
           <svg
-            className="w-16 h-16 text-slate-300 mb-4"
+            className="w-16 h-16 text-slate-300 dark:text-slate-700 mb-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -210,8 +210,8 @@ export default function ReadyForAnalysis() {
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             ></path>
           </svg>
-          <p className="text-xl font-medium text-slate-600">No surveys found</p>
-          <p className="mt-1 text-slate-400">
+          <p className="text-xl font-medium text-slate-600 dark:text-slate-300">No surveys found</p>
+          <p className="mt-1 text-slate-400 dark:text-slate-500">
             There are currently no surveys with 12 or more responses ready for
             analysis.
           </p>
@@ -223,12 +223,12 @@ export default function ReadyForAnalysis() {
               <div
                 key={survey.id}
                 onClick={() => { setDetailSurvey(survey); setDetailOpen(true); }}
-                className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex items-center justify-between group relative overflow-hidden cursor-pointer"
+                className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-slate-100 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/50 transition-all flex items-center justify-between group relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                 <div className="flex items-center gap-4 flex-1 pr-6">
-                  <div className="bg-slate-50 p-3 rounded-lg text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shrink-0">
+                  <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg text-slate-400 dark:text-gray-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors shrink-0">
                     <svg
                       className="w-6 h-6"
                       fill="none"
@@ -245,14 +245,14 @@ export default function ReadyForAnalysis() {
                   </div>
                   <div>
                     <h3
-                      className="text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-700 transition-colors truncate max-w-lg lg:max-w-2xl"
+                      className="text-lg font-bold text-slate-800 dark:text-white leading-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors truncate max-w-lg lg:max-w-2xl"
                       title={survey.title}
                     >
                       {survey.title}
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
                       ID: {survey.id}
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                         To Be Analyzed
                       </span>
                     </p>
@@ -261,10 +261,10 @@ export default function ReadyForAnalysis() {
 
                 <div className="flex items-center gap-8 shrink-0">
                   <div className="text-right">
-                    <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider mb-1">
                       Responses
                     </p>
-                    <div className="inline-flex items-center justify-center bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full text-sm">
+                    <div className="inline-flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold px-3 py-1 rounded-full text-sm">
                       {survey.response_count}
                     </div>
                   </div>
@@ -310,9 +310,9 @@ export default function ReadyForAnalysis() {
 
       {/* Pagination controls */}
       {!loading && !error && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 px-4 py-2.5 mt-3 flex items-center justify-between shrink-0">
-          <div className="text-xs font-medium text-slate-500">
-            Page <span className="text-slate-900 font-bold">{page}</span>
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-100 dark:border-gray-800 px-4 py-2.5 mt-3 flex items-center justify-between shrink-0">
+          <div className="text-xs font-medium text-slate-500 dark:text-gray-400">
+            Page <span className="text-slate-900 dark:text-white font-bold">{page}</span>
           </div>
           <div className="flex gap-2">
             <button
@@ -320,8 +320,8 @@ export default function ReadyForAnalysis() {
               disabled={page === 1}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 page === 1
-                  ? "bg-slate-50 text-slate-300 cursor-not-allowed"
-                  : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                  ? "bg-slate-50 dark:bg-gray-800 text-slate-300 dark:text-gray-600 cursor-not-allowed"
+                  : "bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-600 hover:shadow-sm"
               }`}
             >
               Previous
@@ -331,8 +331,8 @@ export default function ReadyForAnalysis() {
               disabled={fetchedCount < perPage}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 fetchedCount < perPage
-                  ? "bg-slate-50 text-slate-300 cursor-not-allowed"
-                  : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                  ? "bg-slate-50 dark:bg-gray-800 text-slate-300 dark:text-gray-600 cursor-not-allowed"
+                  : "bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-600 hover:shadow-sm"
               }`}
             >
               Next
