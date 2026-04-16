@@ -543,7 +543,7 @@ export const fetchReadySurveys = async (page = 1, perPage = 50) => {
  */
 export const fetchAnalyzedSurveys = async (page = 1, perPage = 20) => {
   const headers = getHeaders();
-  const folderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
+  const folderId = process.env.ANALYZED_FOLDER_ID || "2451474";
 
   const url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&folder_id=${folderId}&sort_by=num_responses&sort_order=DESC&include=response_count`;
   const res = await axios.get(url, { headers });
