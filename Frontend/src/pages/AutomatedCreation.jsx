@@ -157,17 +157,17 @@ const AutomatedCreation = () => {
   const isUploadingOrProcessing = jobId !== null;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Automated Creation</h1>
-        <p className="text-gray-500 mt-2">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Automated Creation</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">
           Upload your doctor list to generate surveys and send invitations.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Uploader and Progress */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 space-y-6">
           <form onSubmit={handleUpload} className="space-y-6">
             <FileUploadZone
               file={file}
@@ -224,20 +224,20 @@ const AutomatedCreation = () => {
 
           {/* Divider */}
           <div className="flex items-center my-6">
-            <div className="flex-grow border-t border-gray-200"></div>
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800"></div>
             <span className="mx-4 text-gray-400 font-medium">OR</span>
-            <div className="flex-grow border-t border-gray-200"></div>
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800"></div>
           </div>
 
           {/* Manual Entry Form */}
           <div className="mt-6">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
               Manual Entry
             </h3>
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Doctor Name
                   </label>
                   <input
@@ -245,7 +245,7 @@ const AutomatedCreation = () => {
                     value={doctorName}
                     onChange={(e) => setDoctorName(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder="Dr. Amal Gunasinge"
                   />
                 </div>
@@ -258,24 +258,24 @@ const AutomatedCreation = () => {
                     value={doctorEmail}
                     onChange={(e) => setDoctorEmail(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder="doctor@gmail.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     SLMC Number
                   </label>
                   <input
                     type="text"
                     value={slmc}
                     onChange={(e) => setSlmc(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder="12345"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Trainer Name
                   </label>
                   <input
@@ -283,12 +283,12 @@ const AutomatedCreation = () => {
                     value={trainerName}
                     onChange={(e) => setTrainerName(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder="Dr. Kasun Perera"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Specialty
                   </label>
                   <input
@@ -296,31 +296,31 @@ const AutomatedCreation = () => {
                     value={specialty}
                     onChange={(e) => setSpecialty(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder="Cardiology"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Pre MD / Post MD / MSc
                   </label>
                   <select
                     value={level}
                     onChange={(e) => setLevel(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
-                    <option value="" disabled>
+                    <option value="" disabled className="dark:bg-gray-900">
                       Select Level
                     </option>
-                    <option value="Post MD">Post MD</option>
-                    <option value="Pre MD">Pre MD</option>
-                    <option value="MSc">MSc</option>
+                    <option value="Post MD" className="dark:bg-gray-900">Post MD</option>
+                    <option value="Pre MD" className="dark:bg-gray-900">Pre MD</option>
+                    <option value="MSc" className="dark:bg-gray-900">MSc</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Emails (comma separated)
                 </label>
                 <textarea
@@ -328,7 +328,7 @@ const AutomatedCreation = () => {
                   onChange={(e) => setEmails(e.target.value)}
                   required
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   placeholder="email1@gmail.com, email2@gmail.com,email3@gmail.com"
                 ></textarea>
               </div>
@@ -379,8 +379,8 @@ const AutomatedCreation = () => {
         </div>
 
         {/* Right Column: Row by Row Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col h-[calc(100vh-200px)]">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800 shrink-0">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-[calc(100vh-200px)]">
+          <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white shrink-0">
             Detailed Status (Row by Row)
           </h3>
 
@@ -388,9 +388,9 @@ const AutomatedCreation = () => {
             {jobStatus ? (
               <RowStatusList rows={jobStatus.rows} />
             ) : (
-              <div className="text-gray-400 flex flex-col items-center justify-center h-full min-h-[200px] border-2 border-dashed border-gray-200 rounded-lg">
+              <div className="text-gray-400 dark:text-gray-500 flex flex-col items-center justify-center h-full min-h-[200px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg transition-colors">
                 <svg
-                  className="w-12 h-12 mb-3 text-gray-300"
+                  className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-700"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
