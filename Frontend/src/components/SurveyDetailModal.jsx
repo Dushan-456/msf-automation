@@ -237,12 +237,12 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
         ></div>
 
         {/* Dialog */}
-        <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col justify-between overflow-hidden transform transition-all">
+        <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col justify-between overflow-hidden transform transition-all border border-gray-100 dark:border-gray-800 transition-colors duration-300">
           {/* Close */}
           <button
             onClick={closeModal}
             disabled={isSending}
-            className="absolute top-6 right-6 z-10 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50/80 hover:bg-slate-100 rounded-full p-2 backdrop-blur-sm"
+            className="absolute top-6 right-6 z-10 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors bg-slate-50/80 dark:bg-gray-800/80 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-full p-2 backdrop-blur-sm"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -251,19 +251,19 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
 
           {/* Header */}
           <div className="flex items-start justify-between gap-6 px-8 pt-8">
-            <div className="shrink-0 text-center bg-slate-300 p-2 rounded-lg">
-              <p className="text-xs text-slate-500 mb-0.5">Current Responses</p>
-              <span className="text-3xl font-extrabold text-blue-600">{survey.response_count}</span>
+            <div className="shrink-0 text-center bg-slate-300 dark:bg-gray-800 p-2 rounded-lg">
+              <p className="text-xs text-slate-500 dark:text-gray-400 mb-0.5">Current Responses</p>
+              <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">{survey.response_count}</span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 leading-tight flex-1">{survey.title}</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight flex-1">{survey.title}</h2>
           </div>
 
           {/* Scrollable body */}
           <div className="px-8 pb-4 flex-1 overflow-y-auto">
-            <p className="mt-6 text-slate-600 text-sm leading-relaxed">
+            <p className="mt-6 text-slate-600 dark:text-gray-300 text-sm leading-relaxed">
               You are about to automate sending an email reminder to all
               recipients who have{' '}
-              <span className="font-bold text-slate-800">not yet responded</span>{' '}
+              <span className="font-bold text-slate-800 dark:text-white">not yet responded</span>{' '}
               to this survey. This action will be processed by SurveyMonkey immediately.
             </p>
 
@@ -271,9 +271,9 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
             <div className="mt-6 max-w-4xl mx-auto w-full">
               {/* Section header */}
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Email Tracking</h3>
+                <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Email Tracking</h3>
                 {!collectorsLoading && !trackingLoading && selectedCollector && (
-                  <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 px-2 py-0.5 rounded-full border border-slate-200 dark:border-gray-700">
                     {filteredRecipients.length} / {recipients.length} shown
                   </span>
                 )}
@@ -281,7 +281,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
 
               {/* Collector picker */}
               {collectorsLoading ? (
-                <div className="flex items-center gap-2 mb-3 text-slate-400 text-sm">
+                <div className="flex items-center gap-2 mb-3 text-slate-400 dark:text-gray-500 text-sm">
                   <svg className="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -289,8 +289,8 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                   Loading collectors...
                 </div>
               ) : collectors.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-400 border border-slate-100 rounded-xl bg-slate-50">
-                  <svg className="w-8 h-8 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-gray-500 border border-slate-100 dark:border-gray-800 rounded-xl bg-slate-50 dark:bg-gray-800/20">
+                  <svg className="w-8 h-8 mb-2 text-slate-300 dark:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                   <p className="text-sm font-medium">No Email Collectors Found</p>
@@ -314,12 +314,12 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                             isActive
                               ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                              : 'bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm transition-all'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-white' : statusDot}`}></span>
                           {c.name ?? 'Unnamed Collector'}
-                          <span className={`ml-0.5 capitalize opacity-75 ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>
+                          <span className={`ml-0.5 capitalize opacity-75 ${isActive ? 'text-blue-200' : 'text-slate-400 dark:text-gray-500'}`}>
                             · {c.type ?? 'email'}
                           </span>
                         </button>
@@ -341,7 +341,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                           className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
                             filterStatus === val
                               ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                              : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                              : 'bg-white dark:bg-gray-800 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm'
                           }`}
                         >
                           {label}
@@ -357,8 +357,8 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                         onClick={handleCopyTable}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${
                           copied
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow'
+                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800'
+                            : 'bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-md'
                         }`}
                         title="Copy table as formatted HTML for email"
                       >
@@ -382,18 +382,18 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                   )}
 
                   {/* Tracking Table */}
-                  <div className="border border-slate-100 rounded-xl overflow-hidden bg-slate-50">
+                  <div className="border border-slate-100 dark:border-gray-800 rounded-xl overflow-hidden bg-slate-50 dark:bg-gray-900/50">
                     {trackingLoading ? (
-                      <div className="flex items-center justify-center gap-3 py-8 text-slate-500">
+                      <div className="flex items-center justify-center gap-3 py-8 text-slate-500 dark:text-gray-400">
                         <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span className="text-sm">Loading tracking data...</span>
+                        <span className="text-sm font-medium">Loading tracking data...</span>
                       </div>
                     ) : filteredRecipients.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-                        <svg className="w-8 h-8 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-gray-500">
+                        <svg className="w-8 h-8 mb-2 text-slate-300 dark:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                         </svg>
                         <p className="text-sm font-medium">No recipients found</p>
@@ -401,37 +401,37 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                     ) : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-slate-100 border-b border-slate-200">
-                            <th className="text-left text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-2.5">Email</th>
-                            <th className="text-left text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-2.5">Email Status</th>
-                            <th className="text-left text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-2.5">Response Status</th>
+                          <tr className="bg-slate-100 dark:bg-gray-800/50 border-b border-slate-200 dark:border-gray-700">
+                            <th className="text-left text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider px-4 py-2.5">Email</th>
+                            <th className="text-left text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider px-4 py-2.5">Email Status</th>
+                            <th className="text-left text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider px-4 py-2.5">Response Status</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                           {pagedRecipients.map((r, idx) => {
                             const emailStatusColor =
                               r.email_status === 'bounced' || r.email_status === 'opted_out'
-                                ? 'text-red-600 bg-red-50'
+                                ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
                                 : r.email_status === 'sent' || r.email_status === 'responded'
-                                  ? 'text-emerald-700 bg-emerald-50'
+                                  ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
                                   : r.email_status === 'not_responded'
-                                    ? 'text-amber-700 bg-amber-50'
+                                    ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
                                     : r.email_status === 'survey_not_sent'
-                                      ? 'text-slate-500 bg-slate-100'
-                                      : 'text-slate-600 bg-slate-100';
+                                      ? 'text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-gray-800'
+                                      : 'text-slate-600 dark:text-gray-300 bg-slate-100 dark:bg-gray-800';
                             const responseStatusColor =
                               r.response_status === 'completely_responded'
-                                ? 'text-emerald-700 bg-emerald-50'
+                                ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
                                 : r.response_status === 'partial' || r.response_status === 'partially_completed'
-                                  ? 'text-amber-700 bg-amber-50'
+                                  ? 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
                                   : r.response_status === 'not_responded' || !r.response_status
-                                    ? 'text-red-600 bg-red-50'
-                                    : 'text-slate-600 bg-slate-100';
+                                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+                                    : 'text-slate-600 dark:text-gray-300 bg-slate-100 dark:bg-gray-800';
                             const emailLabel = (r.email_status || 'unknown').replace(/_/g, ' ');
                             const responseLabel = (r.response_status || 'not responded').replace(/_/g, ' ');
                             return (
-                              <tr key={idx} className="hover:bg-white transition-colors">
-                                <td className={`px-4 ${isTrackingPaginating ? 'py-2.5' : 'py-1.5'} text-slate-700 font-medium truncate max-w-[180px]`} title={r.email}>
+                              <tr key={idx} className="hover:bg-white dark:hover:bg-gray-800/50 transition-colors group">
+                                <td className={`px-4 ${isTrackingPaginating ? 'py-2.5' : 'py-1.5'} text-slate-700 dark:text-gray-300 font-medium truncate max-w-[180px]`} title={r.email}>
                                   {r.email}
                                 </td>
                                 <td className={`px-4 ${isTrackingPaginating ? 'py-2.5' : 'py-1.5'}`}>
@@ -455,8 +455,8 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                   {/* Tracking Pagination */}
                   {!trackingLoading && isTrackingPaginating && trackingTotalPages > 1 && (
                     <div className="flex items-center justify-between mt-2 px-1">
-                      <span className="text-xs text-slate-500">
-                        Page <span className="font-bold text-slate-700">{trackingPage}</span> of {trackingTotalPages}
+                      <span className="text-xs text-slate-500 dark:text-gray-400">
+                        Page <span className="font-bold text-slate-700 dark:text-white">{trackingPage}</span> of {trackingTotalPages}
                       </span>
                       <div className="flex gap-1.5">
                         <button
@@ -464,8 +464,8 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                           disabled={trackingPage === 1}
                           className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
                             trackingPage === 1
-                              ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              ? 'bg-slate-50 dark:bg-gray-800 text-slate-300 dark:text-gray-600 border-slate-100 dark:border-gray-800 cursor-not-allowed'
+                              : 'bg-white dark:bg-gray-900 text-slate-600 dark:text-gray-300 border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-600 shadow-sm'
                           }`}
                         >
                           ← Prev
@@ -475,8 +475,8 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                           disabled={trackingPage === trackingTotalPages}
                           className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
                             trackingPage === trackingTotalPages
-                              ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              ? 'bg-slate-50 dark:bg-gray-800 text-slate-300 dark:text-gray-600 border-slate-100 dark:border-gray-800 cursor-not-allowed'
+                              : 'bg-white dark:bg-gray-900 text-slate-600 dark:text-gray-300 border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-600 shadow-sm'
                           }`}
                         >
                           Next →
@@ -490,11 +490,11 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
           </div>
 
           {/* Footer */}
-          <div className="p-8 pt-4 border-t border-slate-50 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+          <div className="p-8 pt-4 border-t border-slate-50 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] transition-colors">
             <div className="flex justify-center gap-4 max-w-xl mx-auto w-full">
               <button
                 onClick={closeModal}
-                className="flex-1 py-3 px-6 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 font-bold transition-colors"
+                className="flex-1 py-3 px-6 rounded-xl text-slate-700 dark:text-gray-200 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 font-bold transition-colors"
               >
                 Cancel
               </button>
@@ -517,17 +517,17 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
             onClick={!isSending ? () => setIsConfirmOpen(false) : undefined}
           ></div>
 
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all p-8 flex flex-col items-center text-center">
-            <div className="bg-red-50 text-red-500 p-4 rounded-full mb-6">
+          <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all p-8 flex flex-col items-center text-center border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 p-4 rounded-full mb-6 transition-colors">
               <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
 
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Confirm Action</h3>
-            <p className="text-slate-600 mb-8 leading-relaxed">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Confirm Action</h3>
+            <p className="text-slate-600 dark:text-gray-300 mb-8 leading-relaxed">
               Are you exactly sure you want to send reminders for{' '}
-              <span className="font-bold text-slate-800">"{survey.title}"</span>?
+              <span className="font-bold text-slate-800 dark:text-white">"{survey.title}"</span>?
               This action will email all non-respondents immediately.
             </p>
 
@@ -535,7 +535,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
               <button
                 onClick={() => setIsConfirmOpen(false)}
                 disabled={isSending}
-                className="flex-1 py-3 px-4 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 font-bold transition-colors disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-slate-700 dark:text-gray-200 bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 dark:hover:bg-gray-700 font-bold transition-colors disabled:opacity-50"
               >
                 No, Cancel
               </button>
