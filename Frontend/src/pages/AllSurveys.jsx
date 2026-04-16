@@ -297,14 +297,14 @@ const AllSurveys = () => {
     : filteredRecipients;
 
   return (
-    <div className="p-5 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-6">
+    <div className="p-5 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       {/* Header and Search */}
       <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-slate-800 dark:text-white tracking-tight">
             All MSF Surveys
           </h1>
-          <p className="text-slate-500 mt-2 text-lg">
+          <p className="text-slate-500 dark:text-gray-400 mt-2 text-lg">
             Manage all your surveys, monitor responses, and send reminders.
           </p>
         </div>
@@ -315,7 +315,7 @@ const AllSurveys = () => {
         >
           <input
             type="text"
-            className="block w-full pl-5 pr-24 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm group-hover:shadow"
+            className="block w-full pl-5 pr-24 py-3 border border-slate-200 dark:border-gray-700 rounded-xl leading-5 bg-white dark:bg-gray-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm group-hover:shadow"
             placeholder="Search surveys by title..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -325,7 +325,7 @@ const AllSurveys = () => {
               <button
                 type="button"
                 onClick={clearSearch}
-                className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-white rounded-full bg-opacity-80"
+                className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-white dark:bg-gray-800 rounded-full bg-opacity-80 dark:bg-opacity-40"
                 title="Clear Search"
               >
                 <svg
@@ -398,7 +398,7 @@ const AllSurveys = () => {
           </div>
         ) : error ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="bg-red-50 text-red-600 p-6 rounded-xl flex items-center gap-4 border border-red-100 shadow-sm max-w-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-xl flex items-center gap-4 border border-red-100 dark:border-red-900/30 shadow-sm max-w-lg transition-colors">
               <svg
                 className="w-8 h-8 shrink-0"
                 fill="none"
@@ -416,9 +416,9 @@ const AllSurveys = () => {
             </div>
           </div>
         ) : surveys.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 dark:text-gray-400 bg-white dark:bg-gray-900 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm transition-colors">
             <svg
-              className="w-16 h-16 text-slate-300 mb-4"
+              className="w-16 h-16 text-slate-300 dark:text-gray-700 mb-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -430,10 +430,10 @@ const AllSurveys = () => {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               ></path>
             </svg>
-            <p className="text-xl font-medium text-slate-600">
+            <p className="text-xl font-medium text-slate-600 dark:text-gray-300">
               No surveys found
             </p>
-            <p className="mt-1 text-slate-400">
+            <p className="mt-1 text-slate-400 dark:text-gray-500">
               {activeSearch
                 ? `No results for "${activeSearch}". Try adjusting your search.`
                 : "No surveys found. Check back later."}
@@ -446,12 +446,12 @@ const AllSurveys = () => {
                 <div
                   key={survey.id}
                   onClick={() => openModal(survey)}
-                  className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer flex items-center justify-between group relative overflow-hidden"
+                  className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-slate-100 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/30 transition-all cursor-pointer flex items-center justify-between group relative overflow-hidden"
                 >
                   <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                   <div className="flex items-center gap-4 flex-1 pr-6">
-                    <div className="bg-slate-50 p-3 rounded-lg text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shrink-0">
+                    <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg text-slate-400 dark:text-gray-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors shrink-0">
                       <svg
                         className="w-6 h-6"
                         fill="none"
@@ -468,20 +468,20 @@ const AllSurveys = () => {
                     </div>
                     <div>
                       <h3
-                        className="text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-700 transition-colors truncate max-w-lg lg:max-w-2xl"
+                        className="text-lg font-bold text-slate-800 dark:text-white leading-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors truncate max-w-lg lg:max-w-2xl"
                         title={survey.title}
                       >
                         {survey.title}
                       </h3>
-                      <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                      <p className="text-sm text-slate-500 dark:text-gray-400 mt-1 flex items-center gap-2">
                         ID: {survey.id}
                         {survey.folder_id === "2451474" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                             Completed & Analyzed
                           </span>
                         )}
                         {survey.folder_id === "2452482" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                             To Be Analyzed
                           </span>
                         )}
@@ -491,10 +491,10 @@ const AllSurveys = () => {
 
                   <div className="flex items-center gap-8 shrink-0">
                     <div className="text-right">
-                      <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+                      <p className="text-xs text-slate-400 dark:text-gray-500 font-medium uppercase tracking-wider mb-1">
                         Responses
                       </p>
-                      <div className="inline-flex items-center justify-center bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full text-sm">
+                      <div className="inline-flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold px-3 py-1 rounded-full text-sm">
                         {survey.response_count}
                       </div>
                     </div>
@@ -524,9 +524,9 @@ const AllSurveys = () => {
 
       {/* Pagination controls */}
       {!loading && !error && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 px-4 py-2.5 mt-3 flex items-center justify-between shrink-0">
-          <div className="text-xs font-medium text-slate-500">
-            Page <span className="text-slate-900 font-bold">{page}</span>
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-100 dark:border-gray-800 px-4 py-2.5 mt-3 flex items-center justify-between shrink-0 transition-colors">
+          <div className="text-xs font-medium text-slate-500 dark:text-gray-400">
+            Page <span className="text-slate-900 dark:text-white font-bold">{page}</span>
           </div>
           <div className="flex gap-2">
             <button
@@ -535,8 +535,8 @@ const AllSurveys = () => {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
                  ${
                    page === 1
-                     ? "bg-slate-50 text-slate-300 cursor-not-allowed"
-                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                     ? "bg-slate-50 dark:bg-gray-800 text-slate-300 dark:text-gray-600 cursor-not-allowed"
+                     : "bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-600 hover:shadow-sm"
                  }`}
             >
               Previous
@@ -547,8 +547,8 @@ const AllSurveys = () => {
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all
                  ${
                    surveys.length < perPage
-                     ? "bg-slate-50 text-slate-300 cursor-not-allowed"
-                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                     ? "bg-slate-50 dark:bg-gray-800 text-slate-300 dark:text-gray-600 cursor-not-allowed"
+                     : "bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800 hover:border-slate-300 dark:hover:border-gray-600 hover:shadow-sm"
                  }`}
             >
               Next
@@ -562,17 +562,17 @@ const AllSurveys = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+            className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={!isSendingReminder ? closeModal : undefined}
           ></div>
 
           {/* Modal Dialog */}
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col justify-between overflow-hidden transform transition-all">
+          <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col justify-between overflow-hidden transform transition-all border border-gray-200 dark:border-gray-800 transition-colors">
             {/* Fixed Close Button */}
             <button
               onClick={closeModal}
               disabled={isSendingReminder}
-              className="absolute top-6 right-6 z-10 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50/80 hover:bg-slate-100 rounded-full p-2 backdrop-blur-sm"
+              className="absolute top-6 right-6 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 transition-colors bg-slate-50/80 dark:bg-gray-800/80 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-full p-2 backdrop-blur-sm"
             >
               <svg
                 className="w-6 h-6"
@@ -590,23 +590,23 @@ const AllSurveys = () => {
             </button>
 
             <div className="flex items-start justify-between gap-6 px-8 pt-8">
-              <div className="shrink-0 text-center bg-slate-300 p-2 rounded-lg">
-                <p className="text-xs text-slate-500 mb-0.5">
+              <div className="shrink-0 text-center bg-slate-300 dark:bg-gray-800 p-2 rounded-lg transition-colors">
+                <p className="text-xs text-slate-500 dark:text-gray-400 mb-0.5 font-medium uppercase tracking-wider">
                   Current Responses
                 </p>
-                <span className="text-3xl font-extrabold text-blue-600">
+                <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
                   {selectedSurvey.response_count}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold text-slate-800 leading-tight flex-1">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight flex-1">
                 {selectedSurvey.title}
               </h2>
             </div>
             <div className="px-8 pb-4 flex-1 overflow-y-auto">
-              <p className="mt-6 text-slate-600 text-sm leading-relaxed">
+              <p className="mt-6 text-slate-600 dark:text-gray-400 text-sm leading-relaxed">
                 You are about to automate sending an email reminder to all
                 recipients who have{" "}
-                <span className="font-bold text-slate-800">
+                <span className="font-bold text-slate-800 dark:text-gray-200">
                   not yet responded
                 </span>{" "}
                 to this survey. This action will be processed by SurveyMonkey
@@ -616,22 +616,22 @@ const AllSurveys = () => {
               {/* ── Collector Tabs + Email Tracking ── */}
               <div className="mt-6 max-w-4xl mx-auto w-full">
                 {/* Section header */}
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                <div className="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">
                     Email Tracking
                   </h3>
                   {!collectorsLoading &&
                     !trackingLoading &&
                     selectedCollector && (
-                      <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-700">
                         {filteredRecipients.length} / {recipients.length} shown
                       </span>
                     )}
                 </div>
-
+ 
                 {/* Collector picker */}
                 {collectorsLoading ? (
-                  <div className="flex items-center gap-2 mb-3 text-slate-400 text-sm">
+                  <div className="flex items-center gap-2 mb-3 text-slate-400 dark:text-gray-500 text-sm">
                     <svg
                       className="animate-spin h-4 w-4 text-blue-400"
                       xmlns="http://www.w3.org/2000/svg"
@@ -655,9 +655,9 @@ const AllSurveys = () => {
                     Loading collectors...
                   </div>
                 ) : collectors.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-slate-400 border border-slate-100 rounded-xl bg-slate-50">
+                  <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-gray-500 border border-slate-100 dark:border-gray-800 rounded-xl bg-slate-50 dark:bg-gray-800/20">
                     <svg
-                      className="w-8 h-8 mb-2 text-slate-300"
+                      className="w-8 h-8 mb-2 text-slate-300 dark:text-gray-700"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -697,7 +697,7 @@ const AllSurveys = () => {
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                               isActive
                                 ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                                : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600"
+                                : "bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm"
                             }`}
                           >
                             <span
@@ -705,7 +705,7 @@ const AllSurveys = () => {
                             ></span>
                             {c.name ?? "Unnamed Collector"}
                             <span
-                              className={`ml-0.5 capitalize opacity-75 ${isActive ? "text-blue-200" : "text-slate-400"}`}
+                              className={`ml-0.5 capitalize opacity-75 ${isActive ? "text-blue-200" : "text-slate-400 dark:text-gray-500"}`}
                             >
                               · {c.type ?? "email"}
                             </span>
@@ -728,7 +728,7 @@ const AllSurveys = () => {
                             className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
                               filterStatus === val
                                 ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                                : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600"
+                                : "bg-white dark:bg-gray-800 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm"
                             }`}
                           >
                             {label}
@@ -744,8 +744,8 @@ const AllSurveys = () => {
                           onClick={handleCopyTable}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${
                             copied
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                              : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:shadow"
+                              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800"
+                              : "bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-md"
                           }`}
                           title="Copy table as formatted HTML for email"
                         >
@@ -789,7 +789,7 @@ const AllSurveys = () => {
                     )}
 
                     {/* Tracking Table Area */}
-                    <div className="border border-slate-100 rounded-xl overflow-hidden bg-slate-50">
+                    <div className="border border-slate-100 dark:border-gray-800 rounded-xl overflow-hidden bg-slate-50 dark:bg-gray-900/50">
                       {trackingLoading ? (
                         <div className="flex items-center justify-center gap-3 py-8 text-slate-500">
                           <svg
