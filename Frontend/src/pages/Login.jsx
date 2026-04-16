@@ -37,34 +37,34 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="flex justify-center mb-6">
           <img src={pgimLogo} alt="Logo" className="h-35 w-auto" />
         </div>
-      <div className="max-w-md w-full space-y-8 bg-gray-800 p-10 rounded-2xl shadow-2xl border border-gray-700">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-900 p-10 rounded-2xl shadow-xl dark:shadow-2xl border border-gray-100 dark:border-gray-800 transition-all duration-300">
         <div className="flex justify-center ">
           <img src={smlogo} alt="Logo" className="h-15 w-auto" />
         </div>
         <div>
-          <h2 className="mt-0 text-center text-3xl font-extrabold text-white">
+          <h2 className="mt-0 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Access Portal
           </h2>
-          <p className="mt-1 text-center text-sm text-gray-400">
+          <p className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
             Sign in to MSF Automation
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <p className="text-sm text-red-400">{error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
               </div>
             </div>
           )}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                   <User className="h-5 w-5 text-gray-500" />
@@ -74,13 +74,13 @@ export default function Login({ onLogin }) {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-600 bg-gray-700 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-colors"
+                  className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
                   placeholder="Enter admin username"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                   <Lock className="h-5 w-5 text-gray-500" />
@@ -90,7 +90,7 @@ export default function Login({ onLogin }) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-600 bg-gray-700 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-colors"
+                  className="appearance-none rounded-lg relative block w-full px-3 py-3 pl-10 pr-10 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
                   placeholder="Enter credentials"
                 />
                 <div 
@@ -111,7 +111,7 @@ export default function Login({ onLogin }) {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               {loading ? (
                 <span className="flex items-center">
