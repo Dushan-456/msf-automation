@@ -31,6 +31,17 @@ const TopHeader = ({ theme, toggleTheme, onLogout }) => {
               <User size={20} />
             </div>
           </div>
+
+          {/* Logout Button */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut size={20} />
+            </button>
+          )}
         </div>
       </div>
     </header>
