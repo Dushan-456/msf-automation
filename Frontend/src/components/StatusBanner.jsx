@@ -3,24 +3,24 @@ import { CheckCircle, AlertCircle, Info } from 'lucide-react';
 export default function StatusBanner({ message, isError, type = 'info' }) {
     if (!message) return null;
 
-    let bgColor = 'bg-blue-50';
-    let textColor = 'text-blue-700';
+    let bgColor = 'bg-blue-50 dark:bg-blue-900/20';
+    let textColor = 'text-blue-700 dark:text-blue-400';
     let Icon = Info;
 
     // Detect rate-limit messages for special styling
     const isRateLimit = typeof message === 'string' && message.includes('daily limit reached');
 
     if (isRateLimit) {
-        bgColor = 'bg-amber-50 border-2 border-amber-400 animate-pulse';
-        textColor = 'text-amber-800';
+        bgColor = 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-500 animate-pulse';
+        textColor = 'text-amber-800 dark:text-amber-400';
         Icon = AlertCircle;
     } else if (isError || type === 'error') {
-        bgColor = 'bg-red-50';
-        textColor = 'text-red-700';
+        bgColor = 'bg-red-50 dark:bg-red-900/20';
+        textColor = 'text-red-700 dark:text-red-400';
         Icon = AlertCircle;
     } else if (type === 'success') {
-        bgColor = 'bg-green-50';
-        textColor = 'text-green-700';
+        bgColor = 'bg-green-50 dark:bg-green-900/20';
+        textColor = 'text-green-700 dark:text-green-400';
         Icon = CheckCircle;
     }
 
