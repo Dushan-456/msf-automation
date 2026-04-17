@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import FileUploadZone from '../components/FileUploadZone';
 import StatusBanner from '../components/StatusBanner';
 import ProgressBar from '../components/ProgressBar';
 import RowStatusList from '../components/RowStatusList';
 
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 const AutomatedCreation = () => {
   const [file, setFile] = useState(null);
@@ -33,6 +30,19 @@ const AutomatedCreation = () => {
   // Ref for the polling interval so we can clear it
   const pollIntervalRef = useRef(null);
 
+  // Download Sample CSV
+  const handleDownloadSample = () => {
+    const csvContent = "doctorName,doctorEmail,slmc,trainerName,specialty,level,emails\nDr. John Doe,john.doe@example.com,24014,Dr. S. Abeywardane,Psychiatry,Pre MD,rater1@example.com;rater2@example.com";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "msf_automation_sample.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Clear states when a new file is dropped
   const handleFileDrop = (newFile) => {
     setFile(newFile);
@@ -46,7 +56,7 @@ const AutomatedCreation = () => {
   // The actual polling function
   const pollJobStatus = async (id) => {
     try {
-      const res = await axios.get(`${API_URL}/status/${id}`);
+      const res = await api.get(`/status/${id}`);
       const job = res.data;
       setJobStatus(job);
 
@@ -92,7 +102,7 @@ const AutomatedCreation = () => {
     setJobStatus(null);
     
     try {
-      const response = await axios.post(`${API_URL}/automate-surveys`, formData, {
+      const response = await api.post(`/automate-surveys`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
@@ -121,7 +131,7 @@ const AutomatedCreation = () => {
     setManualStatusType('info');
 
     try {
-      const response = await axios.post(`${API_URL}/automate-manual`, {
+      const response = await api.post(`/automate-manual`, {
         doctorName,
         doctorEmail,
         slmc,
@@ -158,11 +168,22 @@ const AutomatedCreation = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Automated Creation</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Upload your doctor list to generate surveys and send invitations.
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Automated Creation</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            Upload your doctor list to generate surveys and send invitations.
+          </p>
+        </div>
+        <button
+          onClick={handleDownloadSample}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-200 dark:border-indigo-800/50 font-medium text-sm shadow-sm whitespace-nowrap"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Download Sample CSV
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -250,7 +271,7 @@ const AutomatedCreation = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Doctor Email
                   </label>
                   <input
