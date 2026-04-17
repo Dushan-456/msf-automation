@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 /**
  * Self-contained survey detail modal — shows collectors, email tracking,
@@ -53,7 +50,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
     setCollectors([]);
     setSelectedCollector(null);
     setRecipients([]);
-    axios.get(`${API_URL}/surveys/${survey.id}/collectors`)
+    api.get(`/surveys/${survey.id}/collectors`)
       .then(res => {
         const list = Array.isArray(res.data) ? res.data : [];
         setCollectors(list);
@@ -74,7 +71,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
     setRecipients([]);
     setFilterStatus('all');
     setTrackingPage(1);
-    axios.get(`${API_URL}/collectors/${selectedCollector.id}/tracking`)
+    api.get(`/collectors/${selectedCollector.id}/tracking`)
       .then(res => setRecipients(Array.isArray(res.data) ? res.data : []))
       .catch(err => {
         console.error('Tracking fetch error:', err);
@@ -106,7 +103,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
     if (!survey) return;
     setIsSending(true);
     try {
-      await axios.post(`${API_URL}/surveys/${survey.id}/reminders`);
+      await api.post(`/surveys/${survey.id}/reminders`);
       showToast('Reminders successfully sent to non-respondents!', 'success');
       setIsConfirmOpen(false);
       onClose();
@@ -342,7 +339,10 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                             filterStatus === val
                               ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                               : 'bg-white dark:bg-gray-800 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm'
-                          }`}
+                          
+                            }` 
+                        
+                        }
                         >
                           {label}
                         </button>
