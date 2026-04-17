@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 export default function SubjectUpload() {
   const [subjects, setSubjects] = useState([]);
@@ -23,8 +20,9 @@ export default function SubjectUpload() {
   const fetchSubjects = async () => {
     try {
       setFetchingSubjects(true);
-      const res = await axios.get(`${API_URL}/subjects`);
-      setSubjects(res.data.data || []);
+      const res = await api.get(`/subjects`);
+      const payload = res.data.data || res.data;
+      setSubjects(Array.isArray(payload) ? payload : []);
     } catch (err) {
       console.error('Failed to fetch subjects:', err);
       showToast('Failed to load subjects.', 'error');
@@ -97,7 +95,7 @@ export default function SubjectUpload() {
     });
 
     try {
-      const res = await axios.post(`${API_URL}/subjects/upload`, formData, {
+      const res = await api.post(`/subjects/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       showToast(res.data.message || 'Success!', 'success');
