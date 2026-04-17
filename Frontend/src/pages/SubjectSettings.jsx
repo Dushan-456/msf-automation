@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 export default function SubjectSettings() {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [importStatus, setImportStatus] = useState(null);
+  const [importing, setImporting] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -34,8 +33,9 @@ export default function SubjectSettings() {
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/subjects`);
-      setSubjects(res.data.data || []);
+      const res = await api.get(`/subjects`);
+      const payload = res.data.data || res.data;
+      setSubjects(Array.isArray(payload) ? payload : []);
     } catch (err) {
       console.error('Failed to fetch subjects:', err);
       showToast('Failed to load subjects.', 'error');
@@ -46,7 +46,7 @@ export default function SubjectSettings() {
 
   const fetchGlobalSettings = async () => {
     try {
-      const res = await axios.get(`${API_URL}/subjects/settings`);
+      const res = await api.get(`/subjects/settings`);
       const email = res.data.data?.assistantRegistrarEmail || '';
       setArEmail(email);
       setArEmailSaved(email);
@@ -58,7 +58,7 @@ export default function SubjectSettings() {
   const handleSaveArEmail = async () => {
     setSavingAr(true);
     try {
-      await axios.put(`${API_URL}/subjects/settings`, {
+      await api.put(`/subjects/settings`, {
         assistantRegistrarEmail: arEmail
       });
       setArEmailSaved(arEmail);
@@ -88,13 +88,13 @@ export default function SubjectSettings() {
     try {
       if (editingId) {
         // Update
-        await axios.put(`${API_URL}/subjects/${editingId}`, {
+        await api.put(`/subjects/${editingId}`, {
           name, clerkEmail
         });
         showToast(`Subject "${name}" updated successfully.`, 'success');
       } else {
         // Create
-        await axios.post(`${API_URL}/subjects`, {
+        await api.post(`/subjects`, {
           name, clerkEmail
         });
         showToast(`Subject "${name}" added successfully.`, 'success');
@@ -121,7 +121,7 @@ export default function SubjectSettings() {
     if (!window.confirm(`Are you sure you want to delete "${subjectName}"?`)) return;
 
     try {
-      await axios.delete(`${API_URL}/subjects/${id}`);
+      await api.delete(`/subjects/${id}`);
       showToast(`Subject "${subjectName}" deleted.`, 'success');
       fetchSubjects();
     } catch (err) {
@@ -134,15 +134,125 @@ export default function SubjectSettings() {
     subject.clerkEmail.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleExportCSV = async () => {
+    try {
+      const response = await api.get('/subjects/export-csv', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `subjects_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      showToast('Failed to export CSV.', 'error');
+    }
+  };
+
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setImporting(true);
+    setImportStatus(null);
+    try {
+      const res = await api.post('/subjects/import-csv', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      setImportStatus(res.data.stats);
+      showToast(res.data.message, 'success');
+      fetchSubjects();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Import failed.', 'error');
+    } finally {
+      setImporting(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const downloadSampleCSV = () => {
+    const csvContent = "Subject Name,BOS Email\nSample Subject,bos@example.com";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'sample_subjects.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
     <div className="p-5 max-w-5xl mx-auto pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white border-b-4 border-violet-500 pb-2 inline-block">
           Subject Settings
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2">
           Manage subjects and their BOS email contacts.
         </p>
+        </div>
+        <div>
+          
+                <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block mx-1"></div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export
+                  </button>
+
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportCSV}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      disabled={importing}
+                      title="Import CSV"
+                    />
+                    <button
+                      disabled={importing}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors ${importing ? 'opacity-50' : ''}`}
+                    >
+                      {importing ? (
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                      )}
+                      Import
+                    </button>
+                  </div>
+                              <div className="px-6 py-2 bg-slate-50 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800 flex justify-end">
+                <button 
+                  onClick={downloadSampleCSV}
+                  className="text-[10px] font-bold text-violet-500 hover:underline flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Download Sample CSV
+                </button>
+            </div>
+                </div>
+        </div>
       </div>
 
       {/* Global Assistant Registrar Email */}
@@ -186,6 +296,54 @@ export default function SubjectSettings() {
             : 'bg-red-50 text-red-600 border-red-200'
         }`}>
           {toast.message}
+        </div>
+      )}
+
+      {/* Import Status Summary */}
+      {importStatus && (
+        <div className="mb-6 p-5 bg-white dark:bg-gray-900 rounded-xl border border-blue-100 dark:border-blue-900/30 shadow-sm animate-in slide-in-from-top duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Import Summary
+            </h4>
+            <button 
+              onClick={() => setImportStatus(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Total</p>
+              <p className="text-xl font-black text-blue-700 dark:text-blue-300">{importStatus.total}</p>
+            </div>
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg">
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Created</p>
+              <p className="text-xl font-black text-emerald-700 dark:text-emerald-300">{importStatus.created}</p>
+            </div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Skipped</p>
+              <p className="text-xl font-black text-amber-700 dark:text-amber-300">{importStatus.skipped}</p>
+            </div>
+            <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider">Errors</p>
+              <p className="text-xl font-black text-rose-700 dark:text-rose-300">{importStatus.errors.length}</p>
+            </div>
+          </div>
+          {importStatus.skippedNames?.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-bold text-gray-500 mb-1">Duplicates Skipped:</p>
+              <p className="text-xs text-gray-400 italic leading-relaxed">
+                {importStatus.skippedNames.join(', ')}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -321,8 +479,11 @@ export default function SubjectSettings() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 </button>
+
               </div>
             </div>
+
+
 
             {loading ? (
               <div className="p-12 flex flex-col items-center justify-center text-gray-400">
@@ -348,7 +509,7 @@ export default function SubjectSettings() {
                 <p className="text-sm font-medium text-gray-500">No subjects matched your search</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+              <div className="divide-y divide-gray-50 max-h-[450px] overflow-y-auto custom-scrollbar">
                 {filteredSubjects.map((subject) => (
                   <div
                     key={subject._id}
