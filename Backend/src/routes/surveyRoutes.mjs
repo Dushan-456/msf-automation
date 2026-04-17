@@ -1,11 +1,11 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry, getTrackingData, getSurveyCollectors, getTrackingByCollector, getReadySurveys, getAnalyzedSurveys, getCompletedSurveys, getSurveyReportData, analyzeInSM, markSurveyComplete } from '../controllers/surveyController.mjs';
+import auth from '../middleware/auth.mjs';
+import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry, getTrackingData, getSurveyCollectors, getTrackingByCollector, getReadySurveys, getToBeAnalyzedSurveys, getCompletedSurveys, getSurveyReportData, analyzeInSM, markSurveyComplete } from '../controllers/surveyController.mjs';
 
 const router = express.Router();
 
 // Setup Multer to save uploaded files to a temporary 'uploads' folder
-// Add basic file validation logic here
 const upload = multer({ 
     dest: 'uploads/',
     fileFilter: (req, file, cb) => {
@@ -18,6 +18,9 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
+// All routes require authentication
+router.use(auth);
+
 // Define Routes
 router.post('/automate-surveys', upload.single('csvFile'), uploadAndStartAutomation);
 router.get('/status/:jobId', checkJobStatus);
@@ -29,7 +32,7 @@ router.get('/collectors/:collectorId/tracking', getTrackingByCollector);
 router.post('/automate-manual', processManualEntry);
 router.post('/surveys/:surveyId/analyze-in-sm', analyzeInSM);
 router.get('/reports/ready', getReadySurveys);
-router.get('/reports/analyzed', getAnalyzedSurveys);
+router.get('/reports/to-be-analyzed', getToBeAnalyzedSurveys);
 router.get('/reports/completed', getCompletedSurveys);
 router.get('/reports/:surveyId/data', getSurveyReportData);
 router.patch('/reports/:surveyId/complete', markSurveyComplete);
