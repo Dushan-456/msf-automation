@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import api from '../utils/api';
 import PrintableReport from './PrintableReport';
-
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 export default function ReportActionModal({ survey, onClose, onComplete }) {
   const [step, setStep] = useState('fetching'); // fetching, printing, finalizing, done, error
@@ -112,14 +109,8 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
     
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_URL}/reports/${survey.id}/data`);
-        const data = await res.json();
-        if (!res.ok) {
-          if (res.status === 429 || data?.error === 'RateLimit') {
-            throw new Error('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
-          }
-          throw new Error(data.error || 'Failed to fetch report data');
-        }
+        const res = await api.get(`/reports/${survey.id}/data`);
+        const data = res.data;
         
         if (isMounted) {
           setReportData(data);
@@ -128,7 +119,11 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
       } catch (err) {
         if (isMounted) {
           setStep('error');
-          setErrorMsg(err.message);
+          if (err.response?.status === 429) {
+            setErrorMsg('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
+          } else {
+            setErrorMsg(err.response?.data?.error || err.message);
+          }
         }
       }
     };
@@ -154,21 +149,15 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
   const handleFinalize = async () => {
     setStep('finalizing');
     try {
-      const res = await fetch(`${API_URL}/reports/${survey.id}/complete`, {
-        method: 'PATCH'
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 429 || data?.error === 'RateLimit') {
-          throw new Error('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
-        }
-        throw new Error(data.error || 'Failed to mark as complete');
-      }
-      
+      await api.patch(`/reports/${survey.id}/complete`);
       setStep('done');
     } catch (err) {
       setStep('error');
-      setErrorMsg('Printed successfully, but failed to move folder: ' + err.message);
+      if (err.response?.status === 429) {
+        setErrorMsg('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
+      } else {
+        setErrorMsg('Printed successfully, but failed to move folder: ' + (err.response?.data?.error || err.message));
+      }
     }
   };
 
