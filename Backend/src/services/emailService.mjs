@@ -3,19 +3,32 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+/**
+ * Creates and returns the shared Gmail transporter.
+ * Used by both emailService and driveController.
+ */
+let _transporter = null;
+
+export const getTransporter = () => {
+    if (!_transporter) {
+        _transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
     }
-});
+    return _transporter;
+};
 
 export const sendDoctorNotificationEmail = async (doctorName, doctorEmail, specialty, level) => {
     if (!doctorEmail) {
         console.warn(`No email provided for doctor ${doctorName}. Skipping notification.`);
         return; 
     }
+
+    const transporter = getTransporter();
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
