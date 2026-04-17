@@ -41,7 +41,7 @@ export default function RowStatusList({ rows }) {
                                         {row.doctorName || `Row ${idx + 1}`}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider font-semibold">
-                                        {row.status}
+                                        {row.detail || row.status}
                                     </p>
                                 </div>
                             </div>
