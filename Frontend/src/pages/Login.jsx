@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import pgimLogo from '../assets/images/login logo.png';
 import smlogo from '../assets/images/sm.png';
-import axios from 'axios';
-
+import api from '../utils/api';
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -17,16 +16,14 @@ export default function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      const apiBase = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-        ? import.meta.env.VITE_API_URL
-        : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
-      const response = await axios.post(`${apiBase}/login`, {
+      const response = await api.post(`/login`, {
         username,
         password
       });
 
       if (response.data.success) {
-        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         onLogin();
       }
     } catch (err) {
