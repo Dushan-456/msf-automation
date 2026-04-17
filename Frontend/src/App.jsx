@@ -9,10 +9,13 @@ import ToBeAnalyzed from './pages/ToBeAnalyzed';
 import AnalyzedCompleted from './pages/AnalyzedCompleted';
 import SubjectUpload from './pages/SubjectUpload';
 import SubjectSettings from './pages/SubjectSettings';
+import TokenSettings from './pages/TokenSettings';
+import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -20,12 +23,23 @@ function App() {
   });
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn');
-    if (loggedIn === 'true') {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    if (token) {
       setIsLoggedIn(true);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     }
     setLoading(false);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setUser(null);
+  };
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -45,22 +59,25 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />;
+    return <Login onLogin={() => {
+      setIsLoggedIn(true);
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    }} />;
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    setIsLoggedIn(false);
-  };
+
 
   return (
     <Router>
       <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
-        <Sidebar onLogout={handleLogout} />
+        <Sidebar user={user} onLogout={handleLogout} />
         
         {/* Main Content Area */}
         <div className="flex-1 ml-64 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
-          <TopHeader theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} />
+          <TopHeader user={user} theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} />
           
           <main className="flex-1 w-full p-6">
             <Routes>
@@ -71,6 +88,20 @@ function App() {
               <Route path="/analyzed-completed" element={<AnalyzedCompleted />} />
               <Route path="/subject-upload" element={<SubjectUpload />} />
               <Route path="/subject-settings" element={<SubjectSettings />} />
+              
+              {/* Protected Admin Routes */}
+              {user?.role === 'ADMIN' ? (
+                <>
+                  <Route path="/token-settings" element={<TokenSettings />} />
+                  <Route path="/user-management" element={<UserManagement />} />
+                </>
+              ) : (
+                <>
+                  <Route path="/token-settings" element={<Navigate to="/" replace />} />
+                  <Route path="/user-management" element={<Navigate to="/" replace />} />
+                </>
+              )}
+
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
