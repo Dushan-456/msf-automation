@@ -1,7 +1,8 @@
 import fs from 'fs';
 import csv from 'csv-parser';
-import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, getSurveyAnalyzeUrl, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
+import asyncHandler from '../middleware/asyncHandler.mjs';
+import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity, updateRowStatus } from '../services/jobService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, getSurveyAnalyzeUrl, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -13,15 +14,12 @@ export const uploadAndStartAutomation = (req, res) => {
         return res.status(400).json({ error: 'No CSV file uploaded.' });
     }
 
-    // Basic MIME type validation (Multer fileFilter also handles this, but secondary check is good)
     if (req.file.mimetype !== 'text/csv' && !req.file.originalname.endsWith('.csv')) {
         fs.unlinkSync(req.file.path);
         return res.status(400).json({ error: 'Uploaded file must be a CSV.' });
     }
 
     const results = [];
-
-    // Auto-detect encoding and separator
     const fd = fs.openSync(req.file.path, 'r');
     const buffer = Buffer.alloc(1024);
     const bytesRead = fs.readSync(fd, buffer, 0, 1024, 0);
@@ -30,12 +28,10 @@ export const uploadAndStartAutomation = (req, res) => {
     let encoding = 'utf8';
     let separator = ',';
     
-    // Check for UTF-16LE BOM
     if (bytesRead >= 2 && buffer[0] === 0xFF && buffer[1] === 0xFE) {
         encoding = 'utf16le';
     }
 
-    // Read the first chunk to guess the separator
     const firstChunk = buffer.toString(encoding, 0, bytesRead);
     const firstLine = firstChunk.split('\n')[0];
     if (firstLine.includes('\t') && !firstLine.includes(',')) {
@@ -44,17 +40,10 @@ export const uploadAndStartAutomation = (req, res) => {
         separator = ';';
     }
 
-    // Parse the CSV
     fs.createReadStream(req.file.path, { encoding })
         .pipe(csv({ 
             separator: separator,
-            // Clean BOM, quotes, carriage returns, and whitespace from headers
-            mapHeaders: ({ header }) => header
-                .replace(/^\ufeff/gi, '')
-                .replace(/^"|"$/g, '')
-                .replace(/[\r\n]+/g, '')
-                .trim(),
-            // Clean carriage returns, quotes, and whitespace from actual values
+            mapHeaders: ({ header }) => header.replace(/^\ufeff/gi, '').replace(/^"|"$/g, '').replace(/[\r\n]+/g, '').trim(),
             mapValues: ({ value }) => typeof value === 'string' ? value.replace(/[\r\n]+/g, '').replace(/^"|"$/g, '').trim() : value
         }))
         .on('data', (data) => results.push(data))
@@ -64,82 +53,64 @@ export const uploadAndStartAutomation = (req, res) => {
             res.status(500).json({ error: 'Failed to parse CSV file.' });
         })
         .on('end', () => {
-            // Delete the temp file now that we have data in memory
             if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
             if (results.length === 0) {
                 return res.status(400).json({ error: 'The CSV file is empty or could not be parsed.' });
             }
 
-            // 1. Create the job
             const doctorNames = results.map(r => r.doctorName);
             const jobId = createJob(doctorNames);
 
-            // 2. Respond to client immediately with jobId
             res.status(202).json({ 
                 message: "Automation started in the background.", 
                 jobId: jobId 
             });
 
-            // 3. Process the job asynchronously
             processSurveysInBackground(jobId, results);
         });
 };
 
-/**
- * Internal worker function to process the parsed CSV data
- */
 const processSurveysInBackground = async (jobId, dataRows) => {
     console.log(`Job ${jobId}: Started processing ${dataRows.length} rows.`);
 
     for (let i = 0; i < dataRows.length; i++) {
         const row = dataRows[i];
         try {
-            updateJobActivity(jobId, `Processing surveys for ${row.doctorName}...`, i);
-            await processSurveyMonkeyWorkflow(row);
+            updateJobActivity(jobId, `Working on ${row.doctorName}...`, i);
             
-            // Send doctor notification email right after successful SurveyMonkey creation
+            // Pass a progress callback to track internal steps
+            await processSurveyMonkeyWorkflow(row, (detail) => {
+                updateRowStatus(jobId, i, 'processing', detail);
+            });
+            
             if (row.doctorEmail) {
                 try {
+                    updateRowStatus(jobId, i, 'processing', 'Sending Notification Email...');
                     await sendDoctorNotificationEmail(row.doctorName, row.doctorEmail, row.specialty, row.level);
                 } catch (emailError) {
-                    console.error(`Failed to send notification email to ${row.doctorEmail}. Survey workflow completed anyway.`, emailError);
-                    // Decide if you want to fail the job if the email fails, or just log it. 
-                    // Usually we don't want to fail the whole survey creation if only the final notification failed.
+                    console.error(`Email notification failed for ${row.doctorName}:`, emailError.message);
                 }
             }
             
             console.log(`✅ Success: ${row.doctorName}`);
+            updateRowStatus(jobId, i, 'completed', 'Finished successfully');
             updateJobProgress(jobId, { rowIndex: i, success: true });
         } catch (error) {
-            // --- 429 Rate Limit Safety Net ---
             if (error.response?.status === 429) {
-                console.error(`🚫 Rate limit hit during processing of ${row.doctorName}. Aborting remaining rows.`);
-                updateJobProgress(jobId, {
-                    rowIndex: i,
-                    success: false,
-                    errorDetail: `Rate limit hit for ${row.doctorName}: SurveyMonkey API daily limit reached.`
-                });
-                // Mark all remaining rows as failed due to rate limit
+                console.error(`🚫 Rate limit hit during processing of ${row.doctorName}.`);
+                updateJobProgress(jobId, { rowIndex: i, success: false, errorDetail: `Rate limit hit for ${row.doctorName}: SurveyMonkey API daily limit reached.` });
                 for (let j = i + 1; j < dataRows.length; j++) {
-                    updateJobProgress(jobId, {
-                        rowIndex: j,
-                        success: false,
-                        errorDetail: 'Skipped — SurveyMonkey API daily limit reached.'
-                    });
+                    updateJobProgress(jobId, { rowIndex: j, success: false, errorDetail: 'Skipped — SurveyMonkey API daily limit reached.' });
                 }
                 failJob(jobId, 'SurveyMonkey API daily limit reached. Please try again tomorrow.');
-                return; // Abort the loop entirely
+                return; 
             }
 
             const errorMsg = error.response?.data?.error?.message || error.message;
             console.error(`❌ Failed: ${row.doctorName}`, errorMsg);
             
-            updateJobProgress(jobId, { 
-                rowIndex: i,
-                success: false, 
-                errorDetail: `Failed for ${row.doctorName}: ${errorMsg}` 
-            });
+            updateJobProgress(jobId, { rowIndex: i, success: false, errorDetail: `Failed for ${row.doctorName}: ${errorMsg}` });
         }
     }
 
@@ -147,274 +118,103 @@ const processSurveysInBackground = async (jobId, dataRows) => {
     console.log(`Job ${jobId}: Finished processing.`);
 };
 
-/**
- * GET /api/v1/status/:jobId
- * Returns the current progress of a background job.
- */
+// ─── API ENDPOINTS USING ASYNC_HANDLER ────────────────────────────────────────────────────────
+
 export const checkJobStatus = (req, res) => {
     const { jobId } = req.params;
     const job = getJobStatus(jobId);
-
-    if (!job) {
-        return res.status(404).json({ error: 'Job not found or expired.' });
-    }
-
+    if (!job) return res.status(404).json({ error: 'Job not found or expired.' });
     res.json(job);
 };
 
-/**
- * GET /api/v1/surveys
- * Fetches all surveys from SurveyMonkey API with pagination.
- */
-export const getAllSurveys = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page, 10) || 1;
-        const perPage = parseInt(req.query.perPage, 10) || 20;
-        const search = req.query.search || '';
+export const getAllSurveys = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const perPage = parseInt(req.query.perPage, 10) || 20;
+    const search = req.query.search || '';
+    const data = await fetchAllSurveys(page, perPage, search);
+    res.json(data);
+});
 
-        const data = await fetchAllSurveys(page, perPage, search);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error("Error fetching surveys:", errorMsg);
-        res.status(500).json({ error: 'Failed to fetch surveys.' });
+export const sendReminders = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    await sendReminderToNonRespondents(surveyId);
+    res.json({ success: true, message: 'Reminders successfully sent to non-respondents.' });
+});
+
+export const processManualEntry = asyncHandler(async (req, res) => {
+    const { doctorName, doctorEmail, trainerName, specialty, level, emails, slmc } = req.body;
+    
+    if (!doctorName || !emails) {
+        return res.status(400).json({ error: "Missing required fields (doctorName, emails)." });
     }
-};
 
-/**
- * POST /api/v1/surveys/:surveyId/reminders
- * Automates sending reminders to non-respondents for a survey.
- */
-export const sendReminders = async (req, res) => {
-    try {
-        const { surveyId } = req.params;
-        await sendReminderToNonRespondents(surveyId);
-        res.json({ success: true, message: 'Reminders successfully sent to non-respondents.' });
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error sending reminders for survey ${req.params.surveyId}:`, errorMsg);
-        res.status(500).json({ error: `Failed to send reminders: ${errorMsg}` });
+    await processSurveyMonkeyWorkflow({ doctorName, trainerName, specialty, level, emails, slmc });
+    
+    if (doctorEmail) {
+        try {
+            await sendDoctorNotificationEmail(doctorName, doctorEmail, specialty, level);
+        } catch (emailError) {}
     }
-};
+    
+    res.status(200).json({ success: true, message: `Successfully processed survey for ${doctorName}.` });
+});
 
-/**
- * POST /api/v1/automate-manual
- * Directly processes a single doctor's survey from JSON payload.
- */
-export const processManualEntry = async (req, res) => {
-    try {
-        const { doctorName, doctorEmail, trainerName, specialty, level, emails, slmc } = req.body;
-        
-        if (!doctorName || !emails) {
-            return res.status(400).json({ error: "Missing required fields (doctorName, emails)." });
-        }
+export const getTrackingData = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    const data = await fetchRecipientTracking(surveyId);
+    res.json(data);
+});
 
-        // Run the workflow
-        await processSurveyMonkeyWorkflow({ doctorName, trainerName, specialty, level, emails, slmc });
-        
-        // Send notification email
-        if (doctorEmail) {
-            try {
-                await sendDoctorNotificationEmail(doctorName, doctorEmail, specialty, level);
-            } catch (emailError) {
-                console.error(`Failed to send notification email to ${doctorEmail}. Survey workflow completed anyway.`, emailError);
-                // Continue with success response because main workflow succeeded
-            }
-        }
-        
-        res.status(200).json({ success: true, message: `Successfully processed survey for ${doctorName}.` });
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`❌ Manual Entry Failed: ${req.body?.doctorName}`, errorMsg);
-        res.status(500).json({ error: `Manual entry failed: ${errorMsg}` });
-    }
-};
+export const getSurveyCollectors = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    const data = await fetchSurveyCollectors(surveyId);
+    res.json(data);
+});
 
-/**
- * GET /api/v1/surveys/:surveyId/tracking
- * Returns recipient email & response tracking data for a specific survey.
- */
-export const getTrackingData = async (req, res) => {
-    try {
-        const { surveyId } = req.params;
-        const data = await fetchRecipientTracking(surveyId);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error fetching tracking data for survey ${req.params.surveyId}:`, errorMsg);
-        res.status(500).json({ error: `Failed to fetch tracking data: ${errorMsg}` });
-    }
-};
+export const getTrackingByCollector = asyncHandler(async (req, res) => {
+    const { collectorId } = req.params;
+    const data = await fetchRecipientTrackingByCollector(collectorId);
+    res.json(data);
+});
 
-/**
- * GET /api/v1/surveys/:surveyId/collectors
- * Returns the list of all collectors for a survey (id, name, type, status).
- */
-export const getSurveyCollectors = async (req, res) => {
-    try {
-        const { surveyId } = req.params;
-        const data = await fetchSurveyCollectors(surveyId);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error fetching collectors for survey ${req.params.surveyId}:`, errorMsg);
-        res.status(500).json({ error: `Failed to fetch collectors: ${errorMsg}` });
-    }
-};
+export const getReadySurveys = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const perPage = parseInt(req.query.perPage, 10) || 50;
+    const data = await fetchReadySurveys(page, perPage);
+    res.json(data);
+});
 
-/**
- * GET /api/v1/collectors/:collectorId/tracking
- * Returns recipient tracking data for a specific collector.
- */
-export const getTrackingByCollector = async (req, res) => {
-    try {
-        const { collectorId } = req.params;
-        const data = await fetchRecipientTrackingByCollector(collectorId);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error fetching tracking for collector ${req.params.collectorId}:`, errorMsg);
-        res.status(500).json({ error: `Failed to fetch tracking data: ${errorMsg}` });
-    }
-};
+export const getSurveyReportData = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    const data = await fetchSurveyReportData(surveyId);
+    res.json(data);
+});
 
-/**
- * GET /api/v1/reports/ready
- * Returns list of eligible surveys dynamically fetched from SM.
- */
-export const getReadySurveys = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page, 10) || 1;
-        const perPage = parseInt(req.query.perPage, 10) || 50;
-        const data = await fetchReadySurveys(page, perPage);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error("Error fetching ready surveys:", errorMsg);
-        res.status(500).json({ error: 'Failed to fetch ready surveys.' });
-    }
-};
+export const markSurveyComplete = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    await markSurveyCompleteService(surveyId);
+    res.json({ success: true, message: 'Survey successfully marked as complete.' });
+});
 
-/**
- * GET /api/v1/reports/:surveyId/data
- * Returns details, rollups, and bulk responses for a survey.
- */
-export const getSurveyReportData = async (req, res) => {
-    try {
-        const { surveyId } = req.params;
-        console.log(`[Backend] Fetching report data for survey: ${surveyId}...`);
-        const data = await fetchSurveyReportData(surveyId);
-        console.log(`[Backend] Successfully fetched report data for survey: ${surveyId}`);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error fetching report data for survey ${req.params.surveyId}:`, errorMsg);
-        res.status(500).json({ error: `Failed to fetch report data: ${errorMsg}` });
-    }
-};
+export const analyzeInSM = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    const [urlData] = await Promise.all([
+        getSurveyAnalyzeUrl(surveyId),
+        markSurveyCompleteService(surveyId),
+    ]);
+    res.json({ success: true, analyze_url: urlData.analyze_url });
+});
 
-/**
- * PATCH /api/v1/reports/:surveyId/complete
- * Moves survey to completed folder.
- */
-export const markSurveyComplete = async (req, res) => {
-    try {
-        const { surveyId } = req.params;
-        await markSurveyCompleteService(surveyId);
-        res.json({ success: true, message: 'Survey successfully marked as complete.' });
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error marking survey ${req.params.surveyId} as complete:`, errorMsg);
-        res.status(500).json({ error: `Failed to mark survey complete: ${errorMsg}` });
-    }
-};
+export const getToBeAnalyzedSurveys = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const perPage = parseInt(req.query.perPage, 10) || 20;
+    const data = await fetchToBeAnalyzedSurveys(page, perPage);
+    res.json(data);
+});
 
-/**
- * POST /api/v1/surveys/:surveyId/analyze-in-sm
- * Returns the SM analyze URL and moves the survey to the analyzed folder.
- */
-export const analyzeInSM = async (req, res) => {
-    try {
-        const { surveyId } = req.params;
-        // Fetch analyze URL and move to completed folder in parallel
-        const [urlData] = await Promise.all([
-            getSurveyAnalyzeUrl(surveyId),
-            markSurveyCompleteService(surveyId),
-        ]);
-        res.json({ success: true, analyze_url: urlData.analyze_url });
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error(`Error analyzing survey ${req.params.surveyId} in SM:`, errorMsg);
-        res.status(500).json({ error: `Failed to analyze in SM: ${errorMsg}` });
-    }
-};
-
-/**
- * GET /api/v1/reports/analyzed
- * Returns paginated surveys from the Analyzed/Completed folder.
- */
-export const getAnalyzedSurveys = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page, 10) || 1;
-        const perPage = parseInt(req.query.perPage, 10) || 20;
-        const data = await fetchAnalyzedSurveys(page, perPage);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error("Error fetching analyzed surveys:", errorMsg);
-        res.status(500).json({ error: 'Failed to fetch analyzed surveys.' });
-    }
-};
-
-/**
- * GET /api/v1/reports/completed
- * Returns paginated surveys from the Analyzed/Completed folder (2451474).
- */
-export const getCompletedSurveys = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page, 10) || 1;
-        const perPage = parseInt(req.query.perPage, 10) || 20;
-        const data = await fetchCompletedSurveys(page, perPage);
-        res.json(data);
-    } catch (error) {
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'RateLimit', message: 'SurveyMonkey API daily limit reached. Please try again tomorrow.' });
-        }
-        const errorMsg = error.response?.data?.error?.message || error.message;
-        console.error("Error fetching completed surveys:", errorMsg);
-        res.status(500).json({ error: 'Failed to fetch completed surveys.' });
-    }
-};
+export const getCompletedSurveys = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const perPage = parseInt(req.query.perPage, 10) || 20;
+    const data = await fetchCompletedSurveys(page, perPage);
+    res.json(data);
+});
