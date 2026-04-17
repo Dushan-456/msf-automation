@@ -19,6 +19,7 @@ export const createJob = (doctorNames) => {
             id: index,
             doctorName: name,
             status: 'pending', // pending, processing, completed, failed
+            detail: null,
             error: null
         })),
         errors: [],
@@ -41,6 +42,22 @@ export const updateJobActivity = (jobId, activityText, rowIndex = null) => {
         if (row && row.status === 'pending') {
             row.status = 'processing';
         }
+    }
+
+    jobs.set(jobId, job);
+};
+
+/**
+ * Updates a specific row status and detailed progress message
+ */
+export const updateRowStatus = (jobId, rowIndex, status, detail = null) => {
+    const job = jobs.get(jobId);
+    if (!job) return;
+
+    const row = job.rows[rowIndex];
+    if (row) {
+        if (status) row.status = status;
+        if (detail !== null) row.detail = detail;
     }
 
     jobs.set(jobId, job);
