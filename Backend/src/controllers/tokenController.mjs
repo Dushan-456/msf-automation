@@ -1,3 +1,4 @@
+import axios from 'axios';
 import ApiToken from '../models/ApiToken.mjs';
 import asyncHandler from '../middleware/asyncHandler.mjs';
 
@@ -49,4 +50,42 @@ export const activateToken = asyncHandler(async (req, res) => {
     }
 
     res.json(updated);
+});
+
+/**
+ * Validate all tokens against SurveyMonkey API
+ */
+export const validateAllTokens = asyncHandler(async (req, res) => {
+    const tokens = await ApiToken.find();
+    const results = {};
+
+    const checkPromises = tokens.map(async (t) => {
+        try {
+            // Minimal request to verify token
+            await axios.get('https://api.surveymonkey.com/v3/surveys?per_page=1', {
+                headers: {
+                    'Authorization': `Bearer ${t.token}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000 // 5s timeout
+            });
+            results[t._id] = { isValid: true };
+        } catch (error) {
+            const status = error.response?.status;
+            let message = 'Connection failed';
+            
+            if (status === 401) message = 'Invalid/Expired Token';
+            if (status === 403) message = 'Access Forbidden';
+            if (status === 429) message = 'Rate Limited';
+            
+            results[t._id] = { 
+                isValid: false, 
+                message,
+                status: status || 500
+            };
+        }
+    });
+
+    await Promise.all(checkPromises);
+    res.json(results);
 });
