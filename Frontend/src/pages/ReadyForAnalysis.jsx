@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
 import ReportActionModal from '../components/ReportActionModal';
 import SurveyDetailModal from '../components/SurveyDetailModal';
+import SurveyCardSkeleton from '../components/SurveyCardSkeleton';
 
-const API_URL = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-  ? import.meta.env.VITE_API_URL
-  : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
 
 export default function ReadyForAnalysis() {
   const [surveys, setSurveys] = useState([]);
@@ -30,19 +29,24 @@ export default function ReadyForAnalysis() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}/reports/ready?page=${pageNum}&perPage=${perPage}`);
-      const data = await res.json();
-      if (!res.ok) {
-        // --- 429 Rate Limit Safety Net ---
-        if (res.status === 429 || data?.error === 'RateLimit') {
-          throw new Error('\ud83d\udeab SurveyMonkey API daily limit reached. Please try again tomorrow.');
+      const res = await api.get(`/reports/ready`, {
+        params: { page: pageNum, perPage }
+      });
+      const payload = res.data.data || res.data;
+      if (payload && Array.isArray(payload)) {
+        if (pageNum === 1) {
+          setSurveys(payload);
+        } else {
+          setSurveys((prev) => [...prev, ...payload]);
         }
-        throw new Error(data.error || 'Failed to fetch');
+        setFetchedCount(payload.length);
       }
-      setSurveys(data);
-      setFetchedCount(data.length);
     } catch (err) {
-      setError(err.message);
+      if (err.response?.status === 429) {
+        setError('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.');
+      } else {
+        setError(err.response?.data?.error || err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,16 +80,9 @@ export default function ReadyForAnalysis() {
     e.stopPropagation();
     setAnalyzingId(survey.id);
     try {
-      const res = await fetch(`${API_URL}/surveys/${survey.id}/analyze-in-sm`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 429 || data?.error === 'RateLimit') {
-          setToast({ show: true, message: '🚫 SurveyMonkey API daily limit reached.', type: 'error' });
-        } else {
-          setToast({ show: true, message: data.error || 'Failed to analyze in SM.', type: 'error' });
-        }
-        return;
-      }
+      const res = await api.post(`/surveys/${survey.id}/analyze-in-sm`);
+      const data = res.data;
+      
       // Open SM analyze page in new tab
       if (data.analyze_url) {
         window.open(data.analyze_url, '_blank');
@@ -167,31 +164,11 @@ export default function ReadyForAnalysis() {
 
       {loading ? (
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center">
-              <svg
-                className="animate-spin h-10 w-10 text-blue-600 mb-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">
-                Loading surveys...
-              </p>
+          <div className="flex-1 overflow-y-auto pr-2 pb-6">
+            <div className="flex flex-col gap-4">
+              {Array(perPage).fill(null).map((_, i) => (
+                <SurveyCardSkeleton key={`skeleton-${i}`} />
+              ))}
             </div>
           </div>
         </div>
