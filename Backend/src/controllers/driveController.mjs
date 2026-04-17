@@ -1,20 +1,9 @@
 import fs from 'fs';
+import csv from 'csv-parser';
 import Subject from '../models/Subject.mjs';
 import { getSetting, setSetting } from '../models/Settings.mjs';
 import { getNestedSubjectFolder, uploadFileToDrive } from '../services/googleDriveService.mjs';
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-// Reuse the same Gmail transporter as the existing emailService
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+import { getTransporter } from '../services/emailService.mjs';
 
 // ─── Subject CRUD ─────────────────────────────────────────────
 
@@ -214,7 +203,7 @@ export const uploadAndSend = async (req, res) => {
           attachments,
         };
 
-        await transporter.sendMail(mailOptions);
+        await getTransporter().sendMail(mailOptions);
         console.log(`✅ Email sent successfully for subject "${subject.name}".`);
 
         // 4. Clean up temp files
@@ -240,6 +229,108 @@ export const uploadAndSend = async (req, res) => {
         console.error('Upload & Send error:', error);
         res.status(500).json({ error: `Upload & Send failed: ${error.message}` });
     }
+};
+
+// ─── CSV Import/Export ─────────────────────────────────────────
+
+/**
+ * GET /api/v1/subjects/export-csv
+ * Exports all subjects to a CSV file.
+ */
+export const exportSubjectsCSV = async (req, res) => {
+    try {
+        const subjects = await Subject.find().sort({ name: 1 });
+        
+        // CSV Headers
+        let csvContent = "Subject Name,BOS Email\n";
+        
+        // Add Rows
+        subjects.forEach(s => {
+            // Escape quotes and wrap in quotes to handle commas in names
+            const name = `"${s.name.replace(/"/g, '""')}"`;
+            const email = `"${s.clerkEmail.replace(/"/g, '""')}"`;
+            csvContent += `${name},${email}\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=subjects_export.csv');
+        res.status(200).send(csvContent);
+    } catch (error) {
+        console.error('Export CSV error:', error);
+        res.status(500).json({ error: 'Failed to export subjects.' });
+    }
+};
+
+/**
+ * POST /api/v1/subjects/import-csv
+ * Imports subjects from a CSV file.
+ * Skips duplicates (by name) and returns status.
+ */
+export const importSubjectsCSV = async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No CSV file provided.' });
+    }
+
+    const results = [];
+    const stats = {
+        total: 0,
+        created: 0,
+        skipped: 0,
+        skippedNames: [],
+        errors: []
+    };
+
+    fs.createReadStream(req.file.path)
+        .pipe(csv())
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+            try {
+                for (const row of results) {
+                    stats.total++;
+                    
+                    // Handle potential variations in headers (Case insensitive/trimmed)
+                    const rawName = row['Subject Name'] || row['subject name'] || row['Name'] || row['name'];
+                    const rawEmail = row['BOS Email'] || row['bos email'] || row['Email'] || row['email'] || row['Clerk Email'] || row['clerk email'];
+
+                    if (!rawName || !rawEmail) {
+                        stats.errors.push(`Row ${stats.total}: Missing Name or Email`);
+                        continue;
+                    }
+
+                    const name = rawName.trim();
+                    const clerkEmail = rawEmail.trim().toLowerCase();
+
+                    // Check if exists
+                    const exists = await Subject.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+                    
+                    if (exists) {
+                        stats.skipped++;
+                        stats.skippedNames.push(name);
+                    } else {
+                        await Subject.create({ name, clerkEmail });
+                        stats.created++;
+                    }
+                }
+
+                // Cleanup
+                fs.unlinkSync(req.file.path);
+
+                res.json({
+                    success: true,
+                    message: `Import completed: ${stats.created} created, ${stats.skipped} skipped.`,
+                    stats
+                });
+            } catch (error) {
+                console.error('Import processing error:', error);
+                if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+                res.status(500).json({ error: 'Error processing CSV data.' });
+            }
+        })
+        .on('error', (error) => {
+            console.error('CSV Read error:', error);
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            res.status(500).json({ error: 'Failed to read CSV file.' });
+        });
 };
 
 // ─── Global Settings ──────────────────────────────────────────
@@ -277,3 +368,4 @@ export const updateGlobalSettings = async (req, res) => {
         res.status(500).json({ error: 'Failed to update settings.' });
     }
 };
+
