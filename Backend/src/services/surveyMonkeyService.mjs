@@ -1,13 +1,21 @@
 import axios from "axios";
+import { getSurveyEmailHtml, getSurveyEmailText } from '../templates/emailTemplates.mjs';
+import ApiToken from '../models/ApiToken.mjs';
 
 // SurveyMonkey API Config
-const getHeaders = () => ({
-  Authorization: `Bearer ${process.env.SM_ACCESS_TOKEN}`,
-  "Content-Type": "application/json",
-});
+const getHeaders = async () => {
+  // Try to find the active token in the database
+  const activeTokenDoc = await ApiToken.findOne({ isActive: true });
+  const token = activeTokenDoc ? activeTokenDoc.token : process.env.SM_ACCESS_TOKEN;
+
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+};
 
 export const fetchAllSurveys = async (page = 1, perPage = 20, searchQuery = '') => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   
   let url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&sort_by=date_modified&sort_order=DESC&include=response_count`;
   
@@ -19,7 +27,7 @@ export const fetchAllSurveys = async (page = 1, perPage = 20, searchQuery = '') 
   return res.data;
 };
 
-export const processSurveyMonkeyWorkflow = async (data) => {
+export const processSurveyMonkeyWorkflow = async (data, onProgress = null) => {
   const { doctorName, trainerName, specialty, level, emails, slmc } = data;
 
   if (!emails || emails.trim() === "") {
@@ -29,9 +37,10 @@ export const processSurveyMonkeyWorkflow = async (data) => {
   }
 
   const baseTemplateId = process.env.BASE_TEMPLATE_ID;
-  const headers = getHeaders();
+  const headers = await getHeaders();
 
   // Step 1: Copy Survey
+  if (onProgress) onProgress("Copying Survey...");
   const title = `Multisource Feedback Form (MSF) ${doctorName} - SLMC - ${slmc || ''} Trainer - ${trainerName} Specialty - ${specialty} ( ${level} )`;
   
   const payload = { from_survey_id: baseTemplateId, title: title };
@@ -51,6 +60,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
 
   try {
     // Step 2: Get Page ID
+    if (onProgress) onProgress("Configuring Survey Details...");
     const detailsRes = await axios.get(
       `https://api.surveymonkey.com/v3/surveys/${newSurveyId}/details`,
       { headers },
@@ -66,6 +76,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
     );
 
     // Step 4: Create Collector
+    if (onProgress) onProgress("Creating Invitation Collector...");
     const collectorRes = await axios.post(
       `https://api.surveymonkey.com/v3/surveys/${newSurveyId}/collectors`,
       { type: "email", name: `MSF Email Invitation 01 - ${doctorName}` },
@@ -74,116 +85,14 @@ export const processSurveyMonkeyWorkflow = async (data) => {
     collectorId = collectorRes.data.id;
 
     // Step 5: Create Message
-    const emailBodyHtml = `
-                                <!doctype html>
-                                <html>
-                                <head>
-                                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                                </head>
-                                <body
-                                    style="
-                                    margin: 0;
-                                    padding: 20px;
-                                    background-color: #f4f5f7;
-                                    font-family: Arial, sans-serif;
-                                    "
-                                >
-                                    <div
-                                    style="
-                                        max-width: 600px;
-                                        margin: 0 auto;
-                                        background: #ffffff;
-                                        padding: 30px;
-                                        border-radius: 8px;
-                                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                    "
-                                    >
-                                    <img
-                                        src="https://pgim.cmb.ac.lk/wp-content/uploads/2016/07/msf-email-logo.png"
-                                        alt="PGIM Logo"
-                                        style="width: 100%; height: auto"
-                                    />
-                                    <h2 style="color: #2c3e50; text-align: center; margin-top: 0">
-                                        PGIM - Multisource Feedback (MSF) - <strong>${doctorName}</strong>
-                                    </h2>
-                                    <p style="color: #555555; font-size: 16px; line-height: 1.6">
-                                        Dear Sir/Madam,
-                                    </p>
-                                    <p style="color: #555555; font-size: 16px; line-height: 1.6">
-                                        On the recommendation of the AAAEC, the Board of Management of the PGIM
-                                        and the Senate of the University of Colombo have approved the
-                                        implementation of an online MSF submission system in parallel to the
-                                        manual process for all postgraduate trainees of the PGIM. As a result,
-                                        the process of submitting and analysing the multi-source feedback
-                                        (formerly known as the Peer Team Rating forms) has been changed.
-                                        According to the guidelines, an MD trainee is expected to complete two
-                                        rounds of MSF, once prior to the MD exam and once during the post MD
-                                        training. The relevant trainee should nominate 15 rators for that.
-                                        <br />
-                                        PGIM trainee <strong>${doctorName}</strong> has nominated you as one
-                                        rator for this purpose. Therefore, I kindly request you to fill the MSF
-                                        form using the below link.
-                                    </p>
-                                    <div style="text-align: center; margin: 35px 0">
-                                        <a
-                                        href="[SurveyLink]"
-                                        style="
-                                            background-color: #00bf6f;
-                                            color: #ffffff;
-                                            padding: 14px 28px;
-                                            text-decoration: none;
-                                            border-radius: 4px;
-                                            font-size: 16px;
-                                            font-weight: bold;
-                                            display: inline-block;
-                                        "
-                                        >Start Survey</a
-                                        >
-                                    </div>
-                                    <p style="color: #555555; font-size: 16px; line-height: 1.6 ; text-align: center">
-                                        Thank you for your time and professionalism!
-                                        <br />
-                                        Please do not forward this email as its survey link is unique to you.
-                                    </p>
-                                    <hr style="border: none; border-top: 1px solid #eeeeee; margin: 30px 0" />
-                                    <div
-                                        style="
-                                        text-align: center;
-                                        font-size: 12px;
-                                        color: #999999;
-                                        line-height: 1.5;
-                                        "
-                                    >
-                                        <p>
-                                        To unsubscribe from these emails,
-                                        <a
-                                            href="[OptOutLink]"
-                                            style="color: #999999; text-decoration: underline"
-                                            >click here</a
-                                        >.
-                                        </p>
-                                        <p>
-                                        View our
-                                        <a
-                                            href="[PrivacyLink]"
-                                            style="color: #999999; text-decoration: underline"
-                                            >Privacy Policy</a
-                                        >.
-                                        </p>
-                                        [FooterLink]
-                                    </div>
-                                    </div>
-                                </body>
-                                </html>   
-                                        `;
+    const emailBodyHtml = getSurveyEmailHtml(doctorName);
 
     const messageRes = await axios.post(
       `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
       {
         type: "invite",
         subject: title,
-        body_text:
-          "Dear Sir/Madam, On the recommendation of the AAAEC, the Board of Management of the PGIM and the Senate of the University of Colombo have approved the implementation of an online MSF submission system in parallel to the manual process for all postgraduate trainees of the PGIM. As a result, the process of submitting and analysing the multi-source feedback (formerly known as the Peer Team Rating forms) has been changed. According to the guidelines, an MD trainee is expected to complete two rounds of MSF, once prior to the MD exam and once during the post MD training. The relevant trainee should nominate 15 rators for that. PGIM trainee  has nominated you as one rator for this purpose. Therefore, I kindly request you to fill the MSF form using the below link.:\n\n[SurveyLink]\n\nThank you!\n\n---\nTo unsubscribe from these emails, click here: [OptOutLink]\nView our Privacy Policy: [PrivacyLink]\n[FooterLink]",
+        body_text: getSurveyEmailText(doctorName),
         body_html: emailBodyHtml,
       },
       { headers },
@@ -191,9 +100,10 @@ export const processSurveyMonkeyWorkflow = async (data) => {
     const messageId = messageRes.data.id;
 
     // Step 6: Add Recipients in Bulk
+    if (onProgress) onProgress("Adding Recipients...");
     const cleanEmails = emails.replace(/"/g, "");
     const emailArray = cleanEmails
-      .split(",")
+      .split(/[;,]/)
       .map((e) => ({ email: e.trim() }))
       .filter((e) => e.email !== "");
     const bulkRes = await axios.post(
@@ -215,11 +125,13 @@ export const processSurveyMonkeyWorkflow = async (data) => {
     }
 
     // Step 7: Send the Emails
+    if (onProgress) onProgress("Sending Invitations...");
     await axios.post(
       `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/send`,
       {},
       { headers },
     );
+    if (onProgress) onProgress("Almost Done...");
   } catch (error) {
     // Simple rollback/cleanup if things fail after survey creation
     console.error(
@@ -244,7 +156,7 @@ export const processSurveyMonkeyWorkflow = async (data) => {
  * Sends a reminder to non-respondents for a given survey.
  */
 export const sendReminderToNonRespondents = async (surveyId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
 
   // Step 1: Fetch survey to get the doctorName from title
   const surveyRes = await axios.get(
@@ -257,12 +169,21 @@ export const sendReminderToNonRespondents = async (surveyId) => {
   const trainerPrefix = "Trainer -";
 
   if (surveyTitle.includes(titlePrefix) && surveyTitle.includes(trainerPrefix)) {
-    doctorName = surveyTitle.substring(
+    let rawNameSegment = surveyTitle.substring(
       surveyTitle.indexOf(titlePrefix) + titlePrefix.length,
       surveyTitle.indexOf(trainerPrefix)
     ).trim();
+    
+    // Further cleanup: Strip off the "- SLMC - ..." part if it exists in the extracted segment
+    const slmcMarker = " - SLMC -";
+    if (rawNameSegment.includes(slmcMarker)) {
+      doctorName = rawNameSegment.split(slmcMarker)[0].trim();
+    } else {
+      doctorName = rawNameSegment;
+    }
   } else {
-    doctorName = surveyTitle; // Fallback
+    // If it's a legacy title or doesn't match the new pattern exactly, try to be smart
+    doctorName = surveyTitle.replace(titlePrefix, "").split(trainerPrefix)[0].trim() || "the trainee";
   }
 
   // Step 2: Fetch the collector for the given survey ID
@@ -279,108 +200,7 @@ export const sendReminderToNonRespondents = async (surveyId) => {
   const collectorId = collectorsRes.data.data[0].id;
 
   // Step 3: Create a reminder message
-  const emailBodyHtml = `
-                                <!doctype html>
-                                <html>
-                                <head>
-                                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                                </head>
-                                <body
-                                    style="
-                                    margin: 0;
-                                    padding: 20px;
-                                    background-color: #f4f5f7;
-                                    font-family: Arial, sans-serif;
-                                    "
-                                >
-                                    <div
-                                    style="
-                                        max-width: 600px;
-                                        margin: 0 auto;
-                                        background: #ffffff;
-                                        padding: 30px;
-                                        border-radius: 8px;
-                                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                    "
-                                    >
-                                    <img
-                                        src="https://pgim.cmb.ac.lk/wp-content/uploads/2016/07/msf-email-logo.png"
-                                        alt="PGIM Logo"
-                                        style="width: 100%; height: auto"
-                                    />
-                                    <h2 style="color: #2c3e50; text-align: center; margin-top: 0">
-                                        PGIM - Multisource Feedback (MSF) - <strong>${doctorName}</strong>
-                                    </h2>
-                                    <p style="color: #555555; font-size: 16px; line-height: 1.6">
-                                        Dear Sir/Madam,
-                                    </p>
-                                    <p style="color: #555555; font-size: 16px; line-height: 1.6">
-                                        On the recommendation of the AAAEC, the Board of Management of the PGIM
-                                        and the Senate of the University of Colombo have approved the
-                                        implementation of an online MSF submission system in parallel to the
-                                        manual process for all postgraduate trainees of the PGIM. As a result,
-                                        the process of submitting and analysing the multi-source feedback
-                                        (formerly known as the Peer Team Rating forms) has been changed.
-                                        According to the guidelines, an MD trainee is expected to complete two
-                                        rounds of MSF, once prior to the MD exam and once during the post MD
-                                        training. The relevant trainee should nominate 15 rators for that.
-                                        <br />
-                                        PGIM trainee <strong>${doctorName}</strong> has nominated you as one
-                                        rator for this purpose. Therefore, I kindly request you to fill the MSF
-                                        form using the below link.
-                                    </p>
-                                    <div style="text-align: center; margin: 35px 0">
-                                        <a
-                                        href="[SurveyLink]"
-                                        style="
-                                            background-color: #00bf6f;
-                                            color: #ffffff;
-                                            padding: 14px 28px;
-                                            text-decoration: none;
-                                            border-radius: 4px;
-                                            font-size: 16px;
-                                            font-weight: bold;
-                                            display: inline-block;
-                                        "
-                                        >Start Survey</a
-                                        >
-                                    </div>
-                                    <p style="color: #555555; font-size: 16px; line-height: 1.6 ; text-align: center">
-                                        Thank you for your time and professionalism!
-                                        <br />
-                                        Please do not forward this email as its survey link is unique to you.
-                                    </p>
-                                    <hr style="border: none; border-top: 1px solid #eeeeee; margin: 30px 0" />
-                                    <div
-                                        style="
-                                        text-align: center;
-                                        font-size: 12px;
-                                        color: #999999;
-                                        line-height: 1.5;
-                                        "
-                                    >
-                                        <p>
-                                        To unsubscribe from these emails,
-                                        <a
-                                            href="[OptOutLink]"
-                                            style="color: #999999; text-decoration: underline"
-                                            >click here</a
-                                        >.
-                                        </p>
-                                        <p>
-                                        View our
-                                        <a
-                                            href="[PrivacyLink]"
-                                            style="color: #999999; text-decoration: underline"
-                                            >Privacy Policy</a
-                                        >.
-                                        </p>
-                                        [FooterLink]
-                                    </div>
-                                    </div>
-                                </body>
-                                </html>   
-                                        `;
+  const emailBodyHtml = getSurveyEmailHtml(doctorName);
 
   const createMessageRes = await axios.post(
     `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
@@ -388,8 +208,7 @@ export const sendReminderToNonRespondents = async (surveyId) => {
       type: "reminder",
       recipient_status: "has_not_responded",
       subject: `Gentle Reminder: - ${surveyTitle}`,
-      body_text:
-        "Sir/Madam, On the recommendation of the AAAEC, the Board of Management of the PGIM and the Senate of the University of Colombo have approved the implementation of an online MSF submission system in parallel to the manual process for all postgraduate trainees of the PGIM. As a result, the process of submitting and analysing the multi-source feedback (formerly known as the Peer Team Rating forms) has been changed. According to the guidelines, an MD trainee is expected to complete two rounds of MSF, once prior to the MD exam and once during the post MD training. The relevant trainee should nominate 15 rators for that. PGIM trainee  has nominated you as one rator for this purpose. Therefore, I kindly request you to fill the MSF form using the below link.:\n\n[SurveyLink]\n\nThank you!\n\n---\nTo unsubscribe from these emails, click here: [OptOutLink]\nView our Privacy Policy: [PrivacyLink]\n[FooterLink]",
+      body_text: getSurveyEmailText(doctorName),
       body_html: emailBodyHtml,
     },
     { headers },
@@ -412,7 +231,7 @@ export const sendReminderToNonRespondents = async (surveyId) => {
  * Returns an array of { id, name, type, status } objects.
  */
 export const fetchSurveyCollectors = async (surveyId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   const res = await axios.get(
     `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors?per_page=50`,
     { headers }
@@ -433,7 +252,7 @@ export const fetchSurveyCollectors = async (surveyId) => {
  * `status` and `survey_response_status`.
  */
 export const fetchRecipientTrackingByCollector = async (collectorId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
 
   // Step 1: Get the recipient ID list from the collector (up to 100)
   const listRes = await axios.get(
@@ -470,7 +289,7 @@ export const fetchRecipientTrackingByCollector = async (collectorId) => {
  * Always uses the first collector — kept for backwards-compat with reminders flow.
  */
 export const fetchRecipientTracking = async (surveyId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
 
   const collectorsRes = await axios.get(
     `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors`,
@@ -490,7 +309,7 @@ export const fetchRecipientTracking = async (surveyId) => {
  * and filters for response_count >= 12.
  */
 export const fetchReadySurveys = async (page = 1, perPage = 50) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   const folderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
   
   let allSurveys = [];
@@ -516,19 +335,13 @@ export const fetchReadySurveys = async (page = 1, perPage = 50) => {
     // Stop if we hit the end of the folder
     if (batch.length < 100) {
       hasMore = false;
-    } 
-    // Stop instantly if we hit < 12, because it is sorted DESC, all future ones will be < 12
-    else if (batch.some(s => s.response_count < 12)) {
-      hasMore = false;
-    }
-    // Stop if we satisfied the UI's pagination request
-    else if (allSurveys.length >= targetEligibleCount) {
-      hasMore = false; 
-    } 
-    else {
+    } else {
       currentSmPage++;
     }
   }
+  
+  // Manually sort by response_count DESC since SurveyMonkey might not support native sorting by num_responses
+  allSurveys.sort((a, b) => b.response_count - a.response_count);
   
   // Surveys are already natively sorted by num_responses DESC
   const startIndex = (page - 1) * perPage;
@@ -538,12 +351,12 @@ export const fetchReadySurveys = async (page = 1, perPage = 50) => {
 };
 
 /**
- * Fetches surveys from the 'Analyzed / Completed' folder (ANALYZED_FOLDER_ID).
+ * Fetches all surveys from the 'To Be Analyzed' folder (TO_BE_ANALYZE_FOLDER_ID).
  * Returns all surveys sorted by response_count DESC with pagination.
  */
-export const fetchAnalyzedSurveys = async (page = 1, perPage = 20) => {
-  const headers = getHeaders();
-  const folderId = process.env.ANALYZED_FOLDER_ID || "2451474";
+export const fetchToBeAnalyzedSurveys = async (page = 1, perPage = 20) => {
+  const headers = await getHeaders();
+  const folderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
 
   const url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&folder_id=${folderId}&sort_by=num_responses&sort_order=DESC&include=response_count`;
   const res = await axios.get(url, { headers });
@@ -556,7 +369,7 @@ export const fetchAnalyzedSurveys = async (page = 1, perPage = 20) => {
  * Returns all surveys sorted by response_count DESC with pagination.
  */
 export const fetchCompletedSurveys = async (page = 1, perPage = 20) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   const folderId = process.env.ANALYZED_FOLDER_ID || "2451474";
 
   const url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&folder_id=${folderId}&sort_by=num_responses&sort_order=DESC&include=response_count`;
@@ -569,7 +382,7 @@ export const fetchCompletedSurveys = async (page = 1, perPage = 20) => {
  * Fetches data needed for the PDF report: details, rollups, and bulk responses.
  */
 export const fetchSurveyReportData = async (surveyId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   
   const [detailsRes, rollupsRes, bulkRes] = await Promise.all([
     axios.get(`https://api.surveymonkey.com/v3/surveys/${surveyId}/details`, { headers }),
@@ -588,7 +401,7 @@ export const fetchSurveyReportData = async (surveyId) => {
  * Fetches the SurveyMonkey analyze page URL for a given survey.
  */
 export const getSurveyAnalyzeUrl = async (surveyId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   const res = await axios.get(
     `https://api.surveymonkey.com/v3/surveys/${surveyId}/details`,
     { headers }
@@ -603,7 +416,7 @@ export const getSurveyAnalyzeUrl = async (surveyId) => {
  * Marks a survey as complete by moving it to the 'Completed' folder (ID 2451474).
  */
 export const markSurveyComplete = async (surveyId) => {
-  const headers = getHeaders();
+  const headers = await getHeaders();
   const completedFolderId = process.env.ANALYZED_FOLDER_ID || "2451474";
   
   const res = await axios.patch(
