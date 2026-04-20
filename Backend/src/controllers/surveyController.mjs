@@ -2,7 +2,7 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import asyncHandler from '../middleware/asyncHandler.mjs';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity, updateRowStatus } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, getSurveyAnalyzeUrl, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -137,7 +137,8 @@ export const getAllSurveys = asyncHandler(async (req, res) => {
 
 export const sendReminders = asyncHandler(async (req, res) => {
     const { surveyId } = req.params;
-    await sendReminderToNonRespondents(surveyId);
+    const { title } = req.body;
+    await sendReminderToNonRespondents(surveyId, title);
     res.json({ success: true, message: 'Reminders successfully sent to non-respondents.' });
 });
 
@@ -198,11 +199,10 @@ export const markSurveyComplete = asyncHandler(async (req, res) => {
 
 export const analyzeInSM = asyncHandler(async (req, res) => {
     const { surveyId } = req.params;
-    const [urlData] = await Promise.all([
-        getSurveyAnalyzeUrl(surveyId),
-        markSurveyCompleteService(surveyId),
-    ]);
-    res.json({ success: true, analyze_url: urlData.analyze_url });
+    // The PATCH response from markSurveyComplete already includes analyze_url,
+    // so we don't need a separate getSurveyAnalyzeUrl call (saves 1 API call)
+    const surveyData = await markSurveyCompleteService(surveyId);
+    res.json({ success: true, analyze_url: surveyData.analyze_url });
 });
 
 export const getToBeAnalyzedSurveys = asyncHandler(async (req, res) => {
