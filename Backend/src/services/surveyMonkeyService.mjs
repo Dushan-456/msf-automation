@@ -155,15 +155,21 @@ export const processSurveyMonkeyWorkflow = async (data, onProgress = null) => {
 /**
  * Sends a reminder to non-respondents for a given survey.
  */
-export const sendReminderToNonRespondents = async (surveyId) => {
+export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClient = null) => {
   const headers = await getHeaders();
 
-  // Step 1: Fetch survey to get the doctorName from title
-  const surveyRes = await axios.get(
-    `https://api.surveymonkey.com/v3/surveys/${surveyId}`,
-    { headers }
-  );
-  const surveyTitle = surveyRes.data.title || "Trainee";
+  // Use the title from the client if provided, otherwise fetch from SM API (1 API call)
+  let surveyTitle;
+  if (surveyTitleFromClient) {
+    surveyTitle = surveyTitleFromClient;
+  } else {
+    const surveyRes = await axios.get(
+      `https://api.surveymonkey.com/v3/surveys/${surveyId}`,
+      { headers }
+    );
+    surveyTitle = surveyRes.data.title || "Trainee";
+  }
+
   let doctorName = "the trainee";
   const titlePrefix = "Multisource Feedback Form (MSF)";
   const trainerPrefix = "Trainer -";
@@ -332,8 +338,11 @@ export const fetchReadySurveys = async (page = 1, perPage = 50) => {
       }
     }
     
-    // Stop if we hit the end of the folder
-    if (batch.length < 100) {
+    // Stop early if we already have enough eligible surveys for the requested page
+    if (allSurveys.length >= targetEligibleCount) {
+      hasMore = false;
+    } else if (batch.length < 100) {
+      // Stop if we hit the end of the folder
       hasMore = false;
     } else {
       currentSmPage++;
