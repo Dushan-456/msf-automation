@@ -103,7 +103,7 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
     if (!survey) return;
     setIsSending(true);
     try {
-      await api.post(`/surveys/${survey.id}/reminders`);
+      await api.post(`/surveys/${survey.id}/reminders`, { title: survey.title });
       showToast('Reminders successfully sent to non-respondents!', 'success');
       setIsConfirmOpen(false);
       onClose();
