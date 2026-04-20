@@ -89,8 +89,9 @@ export default function ReadyForAnalysis() {
       }
       setToast({ show: true, message: `"${survey.title}" moved to Analyzed & Completed.`, type: 'success' });
       setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
-      // Re-fetch current page so pagination stays in sync
-      fetchReadySurveys(page);
+      // Remove the survey from local state instead of re-fetching (saves API calls)
+      setSurveys(prev => prev.filter(s => s.id !== survey.id));
+      setFetchedCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Analyze in SM error:', err);
       setToast({ show: true, message: 'Network error. Please try again.', type: 'error' });
