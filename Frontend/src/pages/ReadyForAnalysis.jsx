@@ -72,8 +72,11 @@ export default function ReadyForAnalysis() {
   };
 
   const handleAnalysisComplete = () => {
-    // Re-fetch current page so pagination stays in sync
-    fetchReadySurveys(page);
+    // Remove the survey from local state instead of re-fetching (saves API calls)
+    if (selectedSurvey) {
+      setSurveys(prev => prev.filter(s => s.id !== selectedSurvey.id));
+      setFetchedCount(prev => Math.max(0, prev - 1));
+    }
   };
 
   const handleAnalyzeInSM = async (e, survey) => {
