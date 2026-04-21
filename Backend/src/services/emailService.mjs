@@ -22,7 +22,7 @@ export const getTransporter = () => {
     return _transporter;
 };
 
-export const sendDoctorNotificationEmail = async (doctorName, doctorEmail, specialty, level) => {
+export const sendDoctorNotificationEmail = async (doctorName, doctorEmail, specialty, level ,slmcNumber) => {
     if (!doctorEmail) {
         console.warn(`No email provided for doctor ${doctorName}. Skipping notification.`);
         return; 
@@ -33,7 +33,7 @@ export const sendDoctorNotificationEmail = async (doctorName, doctorEmail, speci
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: doctorEmail,
-      subject: `Your ${specialty || ""} - ${level || ""} MSF Survey has been Distributed`,
+      subject: `Your ${specialty || ""} - ${level || ""} MSF Survey has been Distributed (SLMC - ${slmcNumber})`,
       html: `
             <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
                 <p>Dear ${doctorName},</p>
