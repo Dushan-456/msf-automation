@@ -13,8 +13,8 @@ export const seedAdminUser = async () => {
             return;
         }
 
-        const username = process.env.ADMIN_USERNAME?.trim() || 'admin';
-        const password = process.env.ADMIN_PASSWORD?.trim() || '12345';
+        const username = process.env.ADMIN_USERNAME?.trim() || "administrator";
+        const password = process.env.ADMIN_PASSWORD?.trim() || "Pgim@2026";
 
         const admin = new User({ username, password, role: 'ADMIN' });
         await admin.save();
