@@ -228,7 +228,7 @@ const AllSurveys = () => {
                     </div>
                     <div>
                       <h3
-                        className="text-lg font-bold text-slate-800 dark:text-white leading-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors truncate max-w-lg lg:max-w-2xl"
+                        className="text-lg font-bold text-slate-800 dark:text-white leading-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors  "
                         title={survey.title}
                       >
                         {survey.title}
