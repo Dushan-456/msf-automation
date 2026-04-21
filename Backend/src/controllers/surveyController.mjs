@@ -87,7 +87,13 @@ const processSurveysInBackground = async (jobId, dataRows) => {
             if (row.doctorEmail) {
                 try {
                     updateRowStatus(jobId, i, 'processing', 'Sending Notification Email...');
-                    await sendDoctorNotificationEmail(row.doctorName, row.doctorEmail, row.specialty, row.level);
+                    await sendDoctorNotificationEmail(
+                      row.doctorName,
+                      row.doctorEmail,
+                      row.specialty,
+                      row.level,
+                      row.slmc,
+                    );
                 } catch (emailError) {
                     console.error(`Email notification failed for ${row.doctorName}:`, emailError.message);
                 }
@@ -153,7 +159,7 @@ export const processManualEntry = asyncHandler(async (req, res) => {
     
     if (doctorEmail) {
         try {
-            await sendDoctorNotificationEmail(doctorName, doctorEmail, specialty, level);
+            await sendDoctorNotificationEmail(doctorName, doctorEmail, specialty, level, slmc);
         } catch (emailError) {}
     }
     
