@@ -34,7 +34,7 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-500 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="flex justify-center mb-6">
           <img src={pgimLogo} alt="Logo" className="h-35 w-auto" />
         </div>
