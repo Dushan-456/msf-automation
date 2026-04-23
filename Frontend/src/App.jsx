@@ -12,11 +12,13 @@ import SubjectSettings from './pages/SubjectSettings';
 import TokenSettings from './pages/TokenSettings';
 import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
+import LogoutModal from './components/LogoutModal';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme || 'light';
@@ -35,11 +37,15 @@ function App() {
   }, []);
 
   const handleLogout = () => {
+    setIsLogoutModalOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setIsLoggedIn(false);
     setUser(null);
   };
+
+  const requestLogout = () => setIsLogoutModalOpen(true);
+  const cancelLogout = () => setIsLogoutModalOpen(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -73,11 +79,11 @@ function App() {
   return (
     <Router>
       <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
-        <Sidebar user={user} onLogout={handleLogout} />
+        <Sidebar user={user} onLogout={requestLogout} />
         
         {/* Main Content Area */}
         <div className="flex-1 ml-64 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
-          <TopHeader user={user} theme={theme} toggleTheme={toggleTheme} onLogout={handleLogout} />
+          <TopHeader user={user} theme={theme} toggleTheme={toggleTheme} onLogout={requestLogout} />
           
           <main className="flex-1 w-full p-6">
             <Routes>
@@ -106,6 +112,12 @@ function App() {
             </Routes>
           </main>
         </div>
+
+        <LogoutModal 
+          isOpen={isLogoutModalOpen}
+          onClose={cancelLogout}
+          onConfirm={handleLogout}
+        />
       </div>
     </Router>
   );
