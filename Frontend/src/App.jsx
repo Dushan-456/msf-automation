@@ -36,6 +36,16 @@ function App() {
     setLoading(false);
   }, []);
 
+  // Listen for forced logout events from the axios 401 interceptor
+  useEffect(() => {
+    const handleForcedLogout = () => {
+      setIsLoggedIn(false);
+      setUser(null);
+    };
+    window.addEventListener('auth:logout', handleForcedLogout);
+    return () => window.removeEventListener('auth:logout', handleForcedLogout);
+  }, []);
+
   const handleLogout = () => {
     setIsLogoutModalOpen(false);
     localStorage.removeItem('token');
