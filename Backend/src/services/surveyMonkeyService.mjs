@@ -253,41 +253,68 @@ export const fetchSurveyCollectors = async (surveyId) => {
 
 /**
  * Fetches recipient tracking data for a specific collector ID.
- * SM list endpoints omit status fields; we fetch each recipient individually
- * (in parallel) from /collectors/{id}/recipients/{recipientId} which includes
- * `status` and `survey_response_status`.
+ * Uses the message-level recipients endpoint with `include` parameter
+ * to get mail_status and survey_response_status in a single bulk request
+ * instead of fetching each recipient individually (N+1 problem).
+ *
+ * Fetches recipients from ALL messages (invite + reminders) and deduplicates
+ * by email, keeping the most up-to-date status.
+ *
+ * Total: ~2-4 API calls (1 for messages + 1 per message for recipients)
  */
 export const fetchRecipientTrackingByCollector = async (collectorId) => {
   const headers = await getHeaders();
 
-  // Step 1: Get the recipient ID list from the collector (up to 100)
-  const listRes = await axios.get(
-    `https://api.surveymonkey.com/v3/collectors/${collectorId}/recipients?per_page=100`,
+  // Step 1: Get the messages for this collector (typically 1-2 messages: invite + reminders)
+  const messagesRes = await axios.get(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages?per_page=50`,
     { headers }
   );
 
-  const recipientList = listRes.data?.data || [];
+  const messageList = messagesRes.data?.data || [];
 
-  if (recipientList.length === 0) {
+  if (messageList.length === 0) {
     return [];
   }
 
-  // Step 2: Fetch each recipient's full detail record in parallel.
-  // The individual endpoint includes `status` and `survey_response_status`.
-  const detailRequests = recipientList.slice(0, 50).map((r) =>
-    axios
-      .get(`https://api.surveymonkey.com/v3/collectors/${collectorId}/recipients/${r.id}`, { headers })
-      .then((res) => res.data)
-      .catch(() => ({ id: r.id, email: r.email, status: null, survey_response_status: null }))
-  );
+  // Step 2: Fetch recipients from ALL messages using the include parameter
+  // to get mail_status and survey_response_status in a single request per message.
+  const recipientsByEmail = new Map();
 
-  const details = await Promise.all(detailRequests);
+  for (const message of messageList) {
+    let currentPage = 1;
+    let hasMore = true;
 
-  return details.map((item) => ({
-    email: item.email,
-    email_status: item.mail_status,
-    response_status: item.survey_response_status,
-  }));
+    while (hasMore) {
+      const recipientsRes = await axios.get(
+        `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${message.id}/recipients?per_page=100&page=${currentPage}&include=survey_response_status,mail_status`,
+        { headers }
+      );
+
+      const batch = recipientsRes.data?.data || [];
+
+      for (const item of batch) {
+        const email = (item.email || '').toLowerCase();
+        if (!email) continue;
+
+        // Keep the entry with the most informative status
+        // Later messages (reminders) may have updated response status
+        const existing = recipientsByEmail.get(email);
+        if (!existing || item.survey_response_status === 'completely_responded') {
+          recipientsByEmail.set(email, {
+            email: item.email,
+            email_status: item.mail_status || existing?.email_status || 'unknown',
+            response_status: item.survey_response_status || existing?.response_status || 'not_responded',
+          });
+        }
+      }
+
+      hasMore = batch.length >= 100;
+      if (hasMore) currentPage++;
+    }
+  }
+
+  return Array.from(recipientsByEmail.values());
 };
 
 /**
