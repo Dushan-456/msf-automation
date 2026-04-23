@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')
-    ? import.meta.env.VITE_API_URL
-    : `${window.location.protocol}//${window.location.hostname}:5000/api/v1`
+  baseURL: import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000/api/v1`
 });
 
 // Request interceptor to attach JWT token
@@ -29,7 +27,9 @@ api.interceptors.response.use(
       if (!error.config.url.endsWith('/login')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login'; // Force a full redirect to clean up React state
+        // Dispatch a custom event so React (App.jsx) can handle the logout
+        // gracefully without a hard page reload that wipes state
+        window.dispatchEvent(new Event('auth:logout'));
       }
     }
     return Promise.reject(error);
