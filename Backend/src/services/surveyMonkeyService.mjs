@@ -331,28 +331,32 @@ export const fetchReadySurveys = async (page = 1, perPage = 50) => {
     
     const batch = res.data?.data || [];
     
-    // Add only eligible surveys
     for (const survey of batch) {
       if (survey.response_count >= 12) {
         allSurveys.push(survey);
+      } else {
+        // Since the API returns surveys sorted by num_responses DESC,
+        // if we encounter one with < 12 responses, all subsequent ones will also have < 12.
+        // We can safely stop fetching more pages to save API requests.
+        hasMore = false;
+        break;
       }
     }
     
     // Stop early if we already have enough eligible surveys for the requested page
-    if (allSurveys.length >= targetEligibleCount) {
+    if (hasMore && allSurveys.length >= targetEligibleCount) {
       hasMore = false;
-    } else if (batch.length < 100) {
+    } else if (hasMore && batch.length < 100) {
       // Stop if we hit the end of the folder
       hasMore = false;
-    } else {
+    } else if (hasMore) {
       currentSmPage++;
     }
   }
   
-  // Manually sort by response_count DESC since SurveyMonkey might not support native sorting by num_responses
+  // They should already be natively sorted, but we keep this to be absolutely certain
   allSurveys.sort((a, b) => b.response_count - a.response_count);
   
-  // Surveys are already natively sorted by num_responses DESC
   const startIndex = (page - 1) * perPage;
   const paginatedSurveys = allSurveys.slice(startIndex, startIndex + perPage);
   
