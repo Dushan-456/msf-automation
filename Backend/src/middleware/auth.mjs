@@ -1,12 +1,11 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'msf-automation-dev-secret-key-2026';
-
 /**
  * Middleware to verify JWT token from Authorization header.
  * Attaches decoded payload (userId, role) to req.user on success.
  */
 const auth = (req, res, next) => {
+    const JWT_SECRET = process.env.JWT_SECRET || 'msf-automation-dev-secret-key-2026';
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -28,3 +27,4 @@ const auth = (req, res, next) => {
 };
 
 export default auth;
+
