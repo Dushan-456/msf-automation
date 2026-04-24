@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 
 
@@ -10,9 +10,12 @@ export default function SubjectUpload() {
   const [loading, setLoading] = useState(false);
   const [fetchingSubjects, setFetchingSubjects] = useState(true);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
-  const [uploadedFiles, setUploadedFiles] = useState([]); // Session-persistent uploaded files
-  const [copiedId, setCopiedId] = useState(null); // Track which file's link was just copied
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [copiedId, setCopiedId] = useState(null);
   const [arEmail, setArEmail] = useState('');
+  const [uploadProgress, setUploadProgress] = useState([]); // Per-file SSE progress
+  const [emailStatus, setEmailStatus] = useState(''); // Email step status
+  const abortRef = useRef(null);
 
   useEffect(() => {
     fetchSubjects();
@@ -50,13 +53,10 @@ export default function SubjectUpload() {
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
-    
-    // Filter only PDFs
     const validFiles = selectedFiles.filter(f => f.type === 'application/pdf');
     if (validFiles.length !== selectedFiles.length) {
       showToast('Some files were skipped. Only PDF files are allowed.', 'error');
     }
-
     if (validFiles.length > 0) {
       setFiles(prev => [...prev, ...validFiles]);
     }
@@ -65,13 +65,10 @@ export default function SubjectUpload() {
   const handleDrop = (e) => {
     e.preventDefault();
     const droppedFiles = Array.from(e.dataTransfer.files);
-    
-    // Filter only PDFs
     const validFiles = droppedFiles.filter(f => f.type === 'application/pdf');
     if (validFiles.length !== droppedFiles.length) {
       showToast('Some files were skipped. Only PDF files are allowed.', 'error');
     }
-
     if (validFiles.length > 0) {
       setFiles(prev => [...prev, ...validFiles]);
     }
@@ -86,20 +83,13 @@ export default function SubjectUpload() {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(link);
       } else {
-        // Fallback for non-secure contexts (e.g., HTTP)
         const textArea = document.createElement("textarea");
         textArea.value = link;
         textArea.style.position = "absolute";
         textArea.style.left = "-999999px";
         document.body.appendChild(textArea);
         textArea.select();
-        try {
-          document.execCommand('copy');
-        } catch (error) {
-          throw new Error("Fallback copy command failed.");
-        } finally {
-          textArea.remove();
-        }
+        try { document.execCommand('copy'); } catch (error) { throw new Error("Fallback copy failed."); } finally { textArea.remove(); }
       }
       setCopiedId(fileId);
       setTimeout(() => setCopiedId(null), 2000);
@@ -109,48 +99,106 @@ export default function SubjectUpload() {
     }
   };
 
+  /** SSE streaming upload (when Drive is ON) */
+  const handleStreamUpload = async (formData) => {
+    // Init progress for each file
+    setUploadProgress(files.map((f) => ({ filename: f.name, status: 'Pending', sheetStatus: '', link: '' })));
+    setEmailStatus('');
+
+    const token = localStorage.getItem('token');
+    const baseURL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const response = await fetch(`${baseURL}/subjects/upload-stream`, {
+        method: 'POST',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+        signal: controller.signal,
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+
+            if (evt.fileIndex !== undefined) {
+              setUploadProgress(prev => {
+                const next = [...prev];
+                next[evt.fileIndex] = { filename: evt.filename, status: evt.status, sheetStatus: evt.sheetStatus || '', link: evt.link || '', message: evt.message || '' };
+                return next;
+              });
+              // Add completed files to session list
+              if (evt.status === 'Completed' && evt.link) {
+                setUploadedFiles(prev => [{ id: `stream-${Date.now()}-${evt.fileIndex}`, name: evt.filename, link: evt.link, sheetStatus: evt.sheetStatus, uploadedAt: new Date().toLocaleTimeString() }, ...prev]);
+              }
+            } else if (evt.status === 'Sending Email...' || evt.status === 'Email Sent' || evt.status === 'Email Error') {
+              setEmailStatus(evt.status);
+            } else if (evt.status === 'Done') {
+              showToast('All files processed successfully!', 'success');
+            } else if (evt.status === 'Error' && evt.fileIndex === undefined) {
+              showToast(evt.message || 'Upload failed.', 'error');
+            }
+          } catch { /* skip malformed lines */ }
+        }
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Stream error:', err);
+        showToast('Upload stream failed.', 'error');
+      }
+    }
+  };
+
+  /** Legacy non-SSE upload (when Drive is OFF) */
+  const handleLegacyUpload = async (formData) => {
+    try {
+      const res = await api.post(`/subjects/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      showToast(res.data.message || 'Success!', 'success');
+      const newDriveFiles = (res.data.driveFiles || []).map(f => ({ id: f.id, name: f.name, link: f.webViewLink, uploadedAt: new Date().toLocaleTimeString() }));
+      if (newDriveFiles.length > 0) setUploadedFiles(prev => [...newDriveFiles, ...prev]);
+    } catch (err) {
+      console.error('Upload error:', err);
+      showToast(err.response?.data?.error || 'Upload failed. Please try again.', 'error');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSubjectId || files.length === 0) return;
 
     setLoading(true);
+    setUploadProgress([]);
 
     const formData = new FormData();
     formData.append('subjectId', selectedSubjectId);
     formData.append('uploadToDrive', uploadToDrive.toString());
-    
-    files.forEach(file => {
-        formData.append('pdfFiles', file);
-    });
+    files.forEach(file => formData.append('pdfFiles', file));
 
-    try {
-      const res = await api.post(`/subjects/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      showToast(res.data.message || 'Success!', 'success');
-
-      // Append new Drive files to session-persistent list
-      const newDriveFiles = (res.data.driveFiles || []).map(f => ({
-        id: f.id,
-        name: f.name,
-        link: f.webViewLink,
-        uploadedAt: new Date().toLocaleTimeString(),
-      }));
-      if (newDriveFiles.length > 0) {
-        setUploadedFiles(prev => [...newDriveFiles, ...prev]);
-      }
-
-      setFiles([]);
-      setSelectedSubjectId('');
-      // Reset file input
-      const fileInput = document.getElementById('pdf-file-input');
-      if (fileInput) fileInput.value = '';
-    } catch (err) {
-      console.error('Upload error:', err);
-      showToast(err.response?.data?.error || 'Upload failed. Please try again.', 'error');
-    } finally {
-      setLoading(false);
+    if (uploadToDrive) {
+      await handleStreamUpload(formData);
+    } else {
+      await handleLegacyUpload(formData);
     }
+
+    setFiles([]);
+    setSelectedSubjectId('');
+    const fileInput = document.getElementById('pdf-file-input');
+    if (fileInput) fileInput.value = '';
+    setLoading(false);
   };
 
   const selectedSubject = subjects.find(s => s._id === selectedSubjectId);
@@ -334,7 +382,93 @@ export default function SubjectUpload() {
           </button>
         </form>
 
-        {/* Uploaded Files List — persists across uploads during this session */}
+        {/* ── SSE Upload Progress ── */}
+        {uploadProgress.length > 0 && (
+          <div className="mt-6 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              Upload Progress
+            </h3>
+            <ul className="space-y-2">
+              {uploadProgress.map((item, idx) => {
+                const isPending = item.status === 'Pending';
+                const isProcessing = item.status === 'Uploading to Drive...' || item.status === 'Updating Sheet...';
+                const isCompleted = item.status === 'Completed';
+                const isError = item.status === 'Error';
+
+                return (
+                  <li key={idx} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-lg px-4 py-3 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{item.filename}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        {isProcessing && (
+                          <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        )}
+                        {isCompleted && (
+                          <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                        )}
+                        {isError && (
+                          <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        )}
+                        <span className={`text-xs font-semibold ${
+                          isPending ? 'text-gray-400 dark:text-gray-500' :
+                          isProcessing ? 'text-blue-600 dark:text-blue-400' :
+                          isCompleted ? 'text-emerald-600 dark:text-emerald-400' :
+                          'text-red-600 dark:text-red-400'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Sheet status + link row */}
+                    {isCompleted && (
+                      <div className="mt-2 flex items-center gap-3 text-xs flex-wrap">
+                        <span className={`font-medium px-2 py-0.5 rounded-full ${
+                          item.sheetStatus?.startsWith('Updated correctly')
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : (item.sheetStatus === 'Row not found' || item.sheetStatus?.startsWith('Duplicate found'))
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                          Sheet: {item.sheetStatus}
+                        </span>
+                        {item.link && (
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-violet-600 dark:text-violet-400 hover:underline truncate max-w-[200px]">
+                            Open in Drive ↗
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {isError && item.message && (
+                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">{item.message}</p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {/* Email status */}
+            {emailStatus && (
+              <div className={`mt-3 text-xs font-medium flex items-center gap-2 ${
+                emailStatus === 'Sending Email...' ? 'text-blue-600 dark:text-blue-400' :
+                emailStatus === 'Email Sent' ? 'text-emerald-600 dark:text-emerald-400' :
+                'text-red-600 dark:text-red-400'
+              }`}>
+                {emailStatus === 'Sending Email...' && (
+                  <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                )}
+                {emailStatus === 'Email Sent' && (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                )}
+                {emailStatus}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Uploaded Files List — persists across uploads ── */}
         {uploadedFiles.length > 0 && (
           <div className="mt-6 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
@@ -356,62 +490,74 @@ export default function SubjectUpload() {
               {uploadedFiles.map((file) => (
                 <li
                   key={file.id}
-                  className="flex items-center justify-between bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-800/30 rounded-lg px-4 py-3 shadow-sm"
+                  className="bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-800/30 rounded-lg px-4 py-3 shadow-sm"
                 >
-                  <div className="flex items-center gap-3 overflow-hidden min-w-0">
-                    {/* PDF icon */}
-                    <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{file.uploadedAt}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                      <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{file.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{file.uploadedAt}</span>
+                          {file.sheetStatus && (
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                              file.sheetStatus?.startsWith('Updated correctly')
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : (file.sheetStatus === 'Row not found' || file.sheetStatus?.startsWith('Duplicate found'))
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                              {file.sheetStatus}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
-                    {/* Open button */}
-                    {file.link && (
-                      <a
-                        href={file.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/30 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
-                        title="Open in Google Drive"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        Open
-                      </a>
-                    )}
-                    {/* Copy link button */}
-                    {file.link && (
-                      <button
-                        onClick={() => handleCopy(file.link, file.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                          copiedId === file.id
-                            ? 'text-emerald-700 bg-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/30'
-                            : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                        title={copiedId === file.id ? 'Copied!' : 'Copy link'}
-                      >
-                        {copiedId === file.id ? (
-                          <>
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Copy Link
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      {file.link && (
+                        <a
+                          href={file.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/30 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+                          title="Open in Google Drive"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Open
+                        </a>
+                      )}
+                      {file.link && (
+                        <button
+                          onClick={() => handleCopy(file.link, file.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                            copiedId === file.id
+                              ? 'text-emerald-700 bg-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/30'
+                              : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                          title={copiedId === file.id ? 'Copied!' : 'Copy link'}
+                        >
+                          {copiedId === file.id ? (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Copy Link
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}
