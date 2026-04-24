@@ -1,0 +1,22 @@
+Here is a report on the other SurveyMonkey API logic. I found a massive API leak, as well as a few heavily-consuming workflows you should be aware of:
+
+🚨 1. Massive "N+1" Rate Limit Leach (fetchRecipientTrackingByCollector)
+The Bug: When a user clicks to view tracking for a specific survey, the backend fetches a list of recipients (1 API call). Then, because tracking statuses (mail_status, survey_response_status) supposedly aren't returned in that list, the code uses a loop and Promise.all() to make a completely separate API request for every single recipient on the list (up to 50). The Cost: If a survey has 50 doctors/recipients attached to it, viewing its tracking page triggers 51 parallel API calls instantly. The Fix for Later: SurveyMonkey supports fetching bulk recipient statuses. Rather than fetching the base /v3/collectors/{id}/recipients endpoint, you can get the specific Message ID and query /v3/collectors/{collector_id}/messages/{message_id}/recipients which returns the mail_status and survey_response_status natively. This would drop the cost from ~51 requests down to exactly 2.
+
+⚠️ 2. Heavy Bulk Automation Workflow (processSurveyMonkeyWorkflow)
+The Logic: When a CSV is uploaded to automate new survey creations, the processSurveyMonkeyWorkflow function does exactly 7 sequential API requests to fully provision and deploy the survey for each person:
+
+POST (Copy Base Survey)
+GET (Fetch Survey Details to find Page ID)
+PATCH (Inject Page Description)
+POST (Create Collector)
+POST (Create Email Message)
+POST (Add Bulk Recipients)
+POST (Send message dispatch) The Cost: This is 7 API Requests per Row. If you upload a CSV with a batch of just 150 rows, the backend immediately loops and attempts to fire off 1,050 consecutive API calls. SurveyMonkey rate limits will heavily throttle or block this sheer density. The Fix for Later: 7 requests per survey creation is standard functionality for SM since they lack an "all in one" creation endpoint. However, implementing a sleep() timer of 1-3 seconds between loop iterations in processSurveysInBackground will space out the API hits and prevent the daily limits/burst limits from failing your jobs halfway through.
+🔍 3. Three Separate Requests per Report generation (fetchSurveyReportData)
+The Logic: To generate the PDF analysis report, the backend fires off 3 parallel requests:
+
+GET /details
+GET /rollups
+GET /responses/bulk The Cost: 3 API calls per analysis button click. The Fix for Later: This is actually quite optimal given SurveyMonkey's endpoint structure (as rollups and bulk responses can't be merged natively in a single call in V3). There is no bug here, but consider caching details on the front-end to reduce it by 1 if you are looking to squeeze every last drop out of your API allowance!
+In summary, the most critical "bug" you have identically to the one I just fixed is located in fetchRecipientTrackingByCollector. Fixing the loop inside of there will immediately save you 50 API points every time a tracking screen is opened! Let me know if you would like me to rewrite it.
