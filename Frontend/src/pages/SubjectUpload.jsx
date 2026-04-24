@@ -12,10 +12,22 @@ export default function SubjectUpload() {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [uploadedFiles, setUploadedFiles] = useState([]); // Session-persistent uploaded files
   const [copiedId, setCopiedId] = useState(null); // Track which file's link was just copied
+  const [arEmail, setArEmail] = useState('');
 
   useEffect(() => {
     fetchSubjects();
+    fetchGlobalSettings();
   }, []);
+
+  const fetchGlobalSettings = async () => {
+    try {
+      const res = await api.get(`/subjects/settings`);
+      const email = res.data.data?.assistantRegistrarEmail || '';
+      setArEmail(email);
+    } catch (err) {
+      console.error('Failed to fetch global settings:', err);
+    }
+  };
 
   const fetchSubjects = async () => {
     try {
@@ -129,6 +141,12 @@ export default function SubjectUpload() {
   return (
     <div className="p-5 max-w-4xl mx-auto pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="mb-6">
+        <div className="mb-3 text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+          <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Assistant Registrar Email: <span className="font-semibold text-gray-800 dark:text-gray-200">{arEmail || 'Not configured'}</span>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white border-b-4 border-violet-500 pb-2 inline-block">
           Subject Upload
         </h1>
