@@ -83,7 +83,24 @@ export default function SubjectUpload() {
 
   const handleCopy = async (link, fileId) => {
     try {
-      await navigator.clipboard.writeText(link);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        // Fallback for non-secure contexts (e.g., HTTP)
+        const textArea = document.createElement("textarea");
+        textArea.value = link;
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+        } catch (error) {
+          throw new Error("Fallback copy command failed.");
+        } finally {
+          textArea.remove();
+        }
+      }
       setCopiedId(fileId);
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
