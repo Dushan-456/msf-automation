@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import auth from '../middleware/auth.mjs';
 import { 
-    addSubject, getSubjects, updateSubject, deleteSubject, uploadAndSend, 
+    addSubject, getSubjects, updateSubject, deleteSubject, uploadAndSend, uploadAndSendStream,
     getGlobalSettings, updateGlobalSettings, exportSubjectsCSV, importSubjectsCSV 
 } from '../controllers/driveController.mjs';
 
@@ -52,6 +52,9 @@ router.post('/import-csv', csvUpload.single('file'), importSubjectsCSV);
 
 // Upload PDF + Send Email
 router.post('/upload', pdfUpload.array('pdfFiles', 20), uploadAndSend);
+
+// Upload PDF + Send Email (SSE stream — used when Drive upload is enabled)
+router.post('/upload-stream', pdfUpload.array('pdfFiles', 20), uploadAndSendStream);
 
 // Handle Multer validation errors for PDF uploads
 router.use((err, req, res, next) => {
