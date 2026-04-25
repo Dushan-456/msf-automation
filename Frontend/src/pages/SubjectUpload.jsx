@@ -204,7 +204,7 @@ export default function SubjectUpload() {
   const selectedSubject = subjects.find(s => s._id === selectedSubjectId);
 
   return (
-    <div className="p-5 max-w-4xl mx-auto pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    <div className="p-5 max-w-7xl mx-auto pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="mb-6">
         <div className="mb-3 text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
           <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,7 +232,10 @@ export default function SubjectUpload() {
       )}
 
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column: Form */}
+          <div>
+            <form onSubmit={handleSubmit} className="space-y-6">
           {/* Subject Dropdown */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -380,16 +383,18 @@ export default function SubjectUpload() {
               </span>
             )}
           </button>
-        </form>
+            </form>
+          </div>
 
-        {/* ── SSE Upload Progress ── */}
-        {uploadProgress.length > 0 && (
-          <div className="mt-6 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+          {/* Right Column: Upload Progress */}
+          <div>
+            {uploadProgress.length > 0 ? (
+              <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 h-[500px] overflow-y-auto flex flex-col scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 shrink-0">
               <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               Upload Progress
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 flex-grow overflow-y-auto pr-2">
               {uploadProgress.map((item, idx) => {
                 const isPending = item.status === 'Pending';
                 const isProcessing = item.status === 'Uploading to Drive...' || item.status === 'Updating Sheet...';
@@ -465,8 +470,15 @@ export default function SubjectUpload() {
                 {emailStatus}
               </div>
             )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full min-h-[250px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-800/20 text-gray-400 dark:text-gray-500">
+                <svg className="w-8 h-8 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <p className="text-sm font-medium">Upload progress will appear here</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* ── Uploaded Files List — persists across uploads ── */}
         {uploadedFiles.length > 0 && (
