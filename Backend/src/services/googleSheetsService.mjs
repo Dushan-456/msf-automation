@@ -36,27 +36,39 @@ const getSheetsClient = () => {
  */
 const parseFilename = (filename) => {
     try {
+        console.log(`\n--- Parsing Filename: "${filename}" ---`);
         // 1. Extract Level (the last content inside parentheses before optional .pdf)
         const levelMatch = filename.match(/\(\s*(.*?)\s*\)(?:\s*\.pdf)?\s*$/i);
-        if (!levelMatch) return null;
+        if (!levelMatch) {
+            console.log('❌ Failed to extract Level. Filename must end with (Level).pdf or (Level)');
+            return null;
+        }
         const level = levelMatch[1].trim();
+        console.log(`✅ Extracted Level: "${level}"`);
 
         // 2. Remove 'Dr.' or 'Dr ' prefix
         let middle = filename.replace(/^Dr[\.\s]\s*/i, '');
         
         // 3. Remove the Level suffix (including the parentheses and .pdf)
         middle = middle.replace(/\(\s*.*?\s*\)(?:\s*\.pdf)?\s*$/i, '');
+        console.log(`✅ Middle segment after stripping prefix/suffix: "${middle}"`);
 
         // 4. Split by hyphen
         const parts = middle.split('-').map(p => p.trim()).filter(Boolean);
+        console.log(`✅ Parts separated by hyphen:`, parts);
 
-        if (parts.length < 2) return null;
+        if (parts.length < 2) {
+            console.log('❌ Failed to extract Name and Specialty. Expected at least one hyphen (-) in the middle segment.');
+            return null;
+        }
 
         const name = parts[0];
         const specialty = parts[parts.length - 1]; // Specialty is always the last part before Level
 
+        console.log(`✅ Final Parsed -> Name: "${name}", Specialty: "${specialty}", Level: "${level}"`);
         return { name, specialty, level };
     } catch (error) {
+        console.error('❌ Error parsing filename:', error);
         return null;
     }
 };
@@ -107,15 +119,25 @@ export const updateSurveyStatusInSheet = async (filename, driveLink) => {
         // 4. Find ALL matching rows (skip header row at index 0)
         const matchedIndices = [];
 
+        // Helper function to remove all spaces, dots, hyphens, underscores, and ampersands for a robust comparison
+        const normalizeForCompare = (str) => (str || '').toLowerCase().replace(/[\s\._\-&]/g, '');
+
+        const normParsedName = normalizeForCompare(parsed.name);
+        const normParsedSpecialty = normalizeForCompare(parsed.specialty);
+        const normParsedLevel = normalizeForCompare(parsed.level);
+
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            const colB = (row[1] || '').trim().toLowerCase(); // Name
-            const colC = (row[2] || '').trim().toLowerCase(); // Specialty
-            const colF = (row[5] || '').trim().toLowerCase(); // Level
+            
+            // Clean the sheet name by removing the 'Dr.' prefix (just like we did for the filename)
+            const sheetNameRaw = (row[1] || '').replace(/^Dr[\.\s]\s*/i, '');
+            const colB = sheetNameRaw; // Name
+            const colC = row[2]; // Specialty
+            const colF = row[5]; // Level
 
-            const nameMatch = colB === parsed.name.trim().toLowerCase();
-            const specialtyMatch = colC === parsed.specialty.trim().toLowerCase();
-            const levelMatch = colF === parsed.level.trim().toLowerCase();
+            const nameMatch = normalizeForCompare(colB) === normParsedName;
+            const specialtyMatch = normalizeForCompare(colC) === normParsedSpecialty;
+            const levelMatch = normalizeForCompare(colF) === normParsedLevel;
 
             if (nameMatch && specialtyMatch && levelMatch) {
                 matchedIndices.push(i);
@@ -124,6 +146,37 @@ export const updateSurveyStatusInSheet = async (filename, driveLink) => {
 
         if (matchedIndices.length === 0) {
             console.warn(`⚠️ No matching row found for: Name="${parsed.name}", Specialty="${parsed.specialty}", Level="${parsed.level}"`);
+            
+            // DIAGNOSTIC LOGGING: Try to find "close" matches to help debug
+            console.log('--- DIAGNOSTIC: Looking for close matches in the sheet ---');
+            let closeMatchFound = false;
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const sheetNameRaw = row[1] || '';
+                const sheetSpecialtyRaw = row[2] || '';
+                const sheetLevelRaw = row[5] || '';
+                
+                const normSheetName = normalizeForCompare(sheetNameRaw);
+                const normSheetSpecialty = normalizeForCompare(sheetSpecialtyRaw);
+                const normSheetLevel = normalizeForCompare(sheetLevelRaw);
+                
+                // If the names match exactly OR if one contains the other (partial name match)
+                if (normSheetName === normParsedName || (normSheetName.length > 5 && (normParsedName.includes(normSheetName) || normSheetName.includes(normParsedName)))) {
+                    console.log(`\n🔍 CLOSE MATCH FOUND AT ROW ${i + 1}:`);
+                    console.log(`  File Data  -> Name: "${parsed.name}", Specialty: "${parsed.specialty}", Level: "${parsed.level}"`);
+                    console.log(`  Sheet Data -> Name: "${sheetNameRaw}", Specialty: "${sheetSpecialtyRaw}", Level: "${sheetLevelRaw}"`);
+                    console.log(`  Mismatches:`);
+                    if (normSheetName !== normParsedName) console.log(`    - Name mismatch (Normalized: "${normParsedName}" vs "${normSheetName}")`);
+                    if (normSheetSpecialty !== normParsedSpecialty) console.log(`    - Specialty mismatch (Normalized: "${normParsedSpecialty}" vs "${normSheetSpecialty}")`);
+                    if (normSheetLevel !== normParsedLevel) console.log(`    - Level mismatch (Normalized: "${normParsedLevel}" vs "${normSheetLevel}")`);
+                    closeMatchFound = true;
+                }
+            }
+            if (!closeMatchFound) {
+                console.log(`❌ No close matches found for Name "${parsed.name}" in the entire sheet.`);
+            }
+            console.log('----------------------------------------------------------');
+
             return { success: false, message: 'Row not found' };
         }
 
