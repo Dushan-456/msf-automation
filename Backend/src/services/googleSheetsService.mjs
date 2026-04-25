@@ -23,26 +23,31 @@ const getSheetsClient = () => {
 
 /**
  * Parses a PDF filename to extract doctor name, specialty, and level.
- * Handles optional SLMC number in the middle.
+ * Handles optional SLMC number in the middle and edge cases like spaces before .pdf.
  *
  * Examples:
  *   "Dr. Y.A.I.P Wijerathna - Clinical Nutrition (Pre MD).pdf"
  *   "Dr. W.K.R.K.Ranaweera - SLMC - 29182  - Cardiothoracic surgery ( Post MD ).pdf"
+ *   "Dr. Dushan Kasun Sampatha - Family Medicine (Pre MD) .pdf"
+ *   "Dr Prasangi Madubhashini Peiris  - SLMC - 25682   - Oral _ Maxillofacial Surgery (Post MD).pdf"
  *
  * @param {string} filename - The original PDF filename.
  * @returns {{ name: string, specialty: string, level: string } | null}
  */
 const parseFilename = (filename) => {
     try {
-        // 1. Extract Level
-        const levelMatch = filename.match(/\(\s*(.*?)\s*\)\.pdf/i);
+        // 1. Extract Level (the last content inside parentheses before optional .pdf)
+        const levelMatch = filename.match(/\(\s*(.*?)\s*\)(?:\s*\.pdf)?\s*$/i);
         if (!levelMatch) return null;
         const level = levelMatch[1].trim();
 
-        // 2. Remove 'Dr.' prefix and Level suffix to isolate the middle part
-        let middle = filename.replace(/Dr\.?\s*/i, '').replace(/\(\s*.*?\s*\)\.pdf/i, '');
+        // 2. Remove 'Dr.' or 'Dr ' prefix
+        let middle = filename.replace(/^Dr[\.\s]\s*/i, '');
+        
+        // 3. Remove the Level suffix (including the parentheses and .pdf)
+        middle = middle.replace(/\(\s*.*?\s*\)(?:\s*\.pdf)?\s*$/i, '');
 
-        // 3. Split by hyphen
+        // 4. Split by hyphen
         const parts = middle.split('-').map(p => p.trim()).filter(Boolean);
 
         if (parts.length < 2) return null;
