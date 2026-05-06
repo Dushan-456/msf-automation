@@ -83,7 +83,7 @@ const parseFilename = (filename) => {
  *
  * @param {string} filename  - The original PDF filename (used to extract name/specialty/level).
  * @param {string} driveLink - The Google Drive webViewLink to paste into Col I.
- * @returns {Promise<{ success: boolean, message: string }>}
+ * @returns {Promise<{ success: boolean, message: string, uploadedDate: string }>}
  */
 export const updateSurveyStatusInSheet = async (filename, driveLink) => {
     try {
@@ -183,13 +183,21 @@ export const updateSurveyStatusInSheet = async (filename, driveLink) => {
         // 5. Update only the FIRST matched row
         const firstIndex = matchedIndices[0];
         const rowNumber = firstIndex + 1;
+        const uploadedDate = new Date().toLocaleString('en-GB', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+        });
 
         await sheets.spreadsheets.values.update({
             spreadsheetId: sheetId,
-            range: `'${sheetName}'!H${rowNumber}:I${rowNumber}`,
+            range: `'${sheetName}'!H${rowNumber}:J${rowNumber}`,
             valueInputOption: 'USER_ENTERED',
             requestBody: {
-                values: [['Completed', driveLink]]
+                values: [['Completed', driveLink, uploadedDate]]
             }
         });
 
@@ -201,8 +209,8 @@ export const updateSurveyStatusInSheet = async (filename, driveLink) => {
             return { success: true, message: `Duplicate found - Updated Row ${rowNumber} (${dupCount} duplicate skipped)` };
         }
 
-        console.log(`✅ Sheet updated → Row ${rowNumber}: Status="Completed", Link="${driveLink}"`);
-        return { success: true, message: `Updated correctly (Row ${rowNumber})` };
+        console.log(`✅ Sheet updated → Row ${rowNumber}: Status="Completed", Link="${driveLink}", Date="${uploadedDate}"`);
+        return { success: true, message: `Updated correctly (Row ${rowNumber})`, uploadedDate };
 
     } catch (error) {
         console.error('❌ Google Sheets update error:', error.message);
