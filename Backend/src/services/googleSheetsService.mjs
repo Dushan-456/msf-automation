@@ -183,13 +183,10 @@ export const updateSurveyStatusInSheet = async (filename, driveLink) => {
         // 5. Update only the FIRST matched row
         const firstIndex = matchedIndices[0];
         const rowNumber = firstIndex + 1;
-        const uploadedDate = new Date().toLocaleString('en-GB', { 
+        const uploadedDate = new Date().toLocaleDateString('en-GB', { 
             day: '2-digit', 
             month: '2-digit', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
+            year: 'numeric' 
         });
 
         await sheets.spreadsheets.values.update({
