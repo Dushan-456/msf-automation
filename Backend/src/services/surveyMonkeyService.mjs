@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getSurveyEmailHtml, getSurveyEmailText } from '../templates/emailTemplates.mjs';
 import ApiToken from '../models/ApiToken.mjs';
+import SurveyCache from '../models/SurveyCache.mjs';
 
 // SurveyMonkey API Config
 const getHeaders = async () => {
@@ -14,17 +15,118 @@ const getHeaders = async () => {
   };
 };
 
+let isSyncing = false;
+
+export const syncSurveysToCache = async () => {
+    if (isSyncing) return;
+    isSyncing = true;
+    try {
+        const headers = await getHeaders();
+        
+        // Find most recent survey in cache
+        const latestCache = await SurveyCache.findOne().sort({ date_modified: -1 });
+        const lastSyncDate = latestCache ? new Date(latestCache.date_modified) : null;
+        
+        let currentSmPage = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+            const url = `https://api.surveymonkey.com/v3/surveys?page=${currentSmPage}&per_page=100&sort_by=date_modified&sort_order=DESC&include=response_count`;
+            const res = await axios.get(url, { headers });
+            const batch = res.data?.data || [];
+            
+            if (batch.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            const bulkOps = [];
+            let reachedCachedData = false;
+
+            for (const survey of batch) {
+                const smDate = new Date(survey.date_modified);
+                
+                // If we hit surveys older than or equal to our last sync date (minus 1 hour buffer)
+                if (lastSyncDate && smDate.getTime() < (lastSyncDate.getTime() - 3600000)) {
+                    reachedCachedData = true;
+                }
+
+                bulkOps.push({
+                    updateOne: {
+                        filter: { smId: survey.id },
+                        update: {
+                            $set: {
+                                smId: survey.id,
+                                title: survey.title,
+                                href: survey.href,
+                                date_modified: smDate,
+                                response_count: survey.response_count || 0,
+                                folder_id: survey.folder_id,
+                                survey_state: survey.survey_state
+                            }
+                        },
+                        upsert: true
+                    }
+                });
+            }
+
+            if (bulkOps.length > 0) {
+                await SurveyCache.bulkWrite(bulkOps);
+            }
+
+            if (batch.length < 100 || reachedCachedData) {
+                hasMore = false;
+            } else {
+                currentSmPage++;
+            }
+        }
+    } catch (error) {
+        console.error("Error syncing surveys to cache:", error.message);
+    } finally {
+        isSyncing = false;
+    }
+};
+
 export const fetchAllSurveys = async (page = 1, perPage = 20, searchQuery = '') => {
   const headers = await getHeaders();
-  
-  let url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&sort_by=date_modified&sort_order=DESC&include=response_count`;
-  
-  if (searchQuery && searchQuery.trim() !== '') {
-    url += `&title=${encodeURIComponent(searchQuery.trim())}`;
-  }
 
-  const res = await axios.get(url, { headers });
-  return res.data;
+  if (searchQuery && searchQuery.trim() !== '') {
+    // 1. Sync new surveys locally
+    await syncSurveysToCache();
+
+    // 2. Perform robust MongoDB regex search
+    const query = {
+        title: { $regex: searchQuery.trim(), $options: 'i' }
+    };
+
+    const total = await SurveyCache.countDocuments(query);
+    const surveys = await SurveyCache.find(query)
+        .sort({ date_modified: -1 })
+        .skip((page - 1) * perPage)
+        .limit(perPage);
+
+    const formattedData = surveys.map(s => ({
+        id: s.smId,
+        title: s.title,
+        href: s.href,
+        date_modified: s.date_modified.toISOString().split('.')[0], // strip millis for SM parity
+        response_count: s.response_count,
+        folder_id: s.folder_id,
+        survey_state: s.survey_state
+    }));
+
+    return {
+        data: formattedData,
+        page,
+        per_page: perPage,
+        total
+    };
+  } else {
+    // Normal behavior without search
+    let url = `https://api.surveymonkey.com/v3/surveys?page=${page}&per_page=${perPage}&sort_by=date_modified&sort_order=DESC&include=response_count`;
+    const res = await axios.get(url, { headers });
+    return res.data;
+  }
 };
 
 export const processSurveyMonkeyWorkflow = async (data, onProgress = null) => {
