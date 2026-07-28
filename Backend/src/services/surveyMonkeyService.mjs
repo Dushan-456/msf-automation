@@ -569,3 +569,56 @@ export const markSurveyComplete = async (surveyId) => {
   
   return res.data;
 };
+
+/**
+ * Adds new emails to an existing collector's invite message and sends it.
+ */
+export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmailsString) => {
+  const headers = await getHeaders();
+
+  // 1. Fetch messages for the collector
+  const messagesRes = await axios.get(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
+    { headers }
+  );
+
+  // Find invite message
+  const inviteMessage = messagesRes.data.data.find(m => m.type === 'invite');
+  if (!inviteMessage) {
+    throw new Error(`No invite message found for Collector ID: ${collectorId}`);
+  }
+  const messageId = inviteMessage.id;
+
+  // 2. Format emails
+  const cleanEmails = newEmailsString.replace(/"/g, "");
+  const emailArray = cleanEmails
+    .split(/[;,]/)
+    .map((e) => ({ email: e.trim() }))
+    .filter((e) => e.email !== "");
+
+  if (emailArray.length === 0) {
+    throw new Error("No valid emails provided.");
+  }
+
+  // 3. Add recipients
+  const bulkRes = await axios.post(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/recipients/bulk`,
+    { contacts: emailArray },
+    { headers }
+  );
+
+  if (bulkRes.data.succeeded && bulkRes.data.succeeded.length === 0) {
+    throw new Error(
+      `Zero recipients were successfully added. They might be duplicates or invalid.`
+    );
+  }
+
+  // 4. Send to newly added unsent recipients
+  const sendRes = await axios.post(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/send`,
+    {},
+    { headers }
+  );
+
+  return { added: bulkRes.data, sendResponse: sendRes.data };
+};
