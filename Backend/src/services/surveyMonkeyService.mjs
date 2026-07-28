@@ -588,21 +588,45 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
     throw new Error(`No invite message found for Collector ID: ${collectorId}`);
   }
 
-  // 2. Fetch original message details to get the exact subject and body
+  // 2. Fetch original message details to get the exact subject
   const msgDetailRes = await axios.get(
     `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${inviteMessage.id}`,
     { headers }
   );
-  const { subject, body_text, body_html } = msgDetailRes.data;
+  const { subject } = msgDetailRes.data;
+
+  // Extract doctor name from subject to recreate the exact custom template
+  let doctorName = "the trainee";
+  const titlePrefix = "Multisource Feedback Form (MSF)";
+  const trainerPrefix = "Trainer -";
+
+  if (subject && subject.includes(titlePrefix) && subject.includes(trainerPrefix)) {
+    let rawNameSegment = subject.substring(
+      subject.indexOf(titlePrefix) + titlePrefix.length,
+      subject.indexOf(trainerPrefix)
+    ).trim();
+    
+    const slmcMarker = " - SLMC -";
+    if (rawNameSegment.includes(slmcMarker)) {
+      doctorName = rawNameSegment.split(slmcMarker)[0].trim();
+    } else {
+      doctorName = rawNameSegment;
+    }
+  } else if (subject) {
+    doctorName = subject.replace(titlePrefix, "").split(trainerPrefix)[0].trim() || "the trainee";
+  }
+
+  const emailBodyHtml = getSurveyEmailHtml(doctorName);
+  const emailBodyText = getSurveyEmailText(doctorName);
 
   // 3. Create a NEW message in the same collector (fixes 400 "Message has already been sent" error)
   const newMsgRes = await axios.post(
     `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
     {
       type: "invite",
-      subject,
-      body_text,
-      body_html
+      subject: subject || inviteMessage.subject || "Survey Invitation",
+      body_text: emailBodyText,
+      body_html: emailBodyHtml
     },
     { headers }
   );
