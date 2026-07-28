@@ -2,7 +2,7 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import asyncHandler from '../middleware/asyncHandler.mjs';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity, updateRowStatus } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService, addNewEmailsToCollectorByCollectorId } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -223,4 +223,16 @@ export const getCompletedSurveys = asyncHandler(async (req, res) => {
     const perPage = parseInt(req.query.perPage, 10) || 20;
     const data = await fetchCompletedSurveys(page, perPage);
     res.json(data);
+});
+
+export const addNewInvites = asyncHandler(async (req, res) => {
+    const { collectorId } = req.params;
+    const { emails } = req.body;
+    
+    if (!emails) {
+        return res.status(400).json({ error: "Missing emails." });
+    }
+
+    const data = await addNewEmailsToCollectorByCollectorId(collectorId, emails);
+    res.json({ success: true, message: 'New invites sent successfully.', data });
 });
