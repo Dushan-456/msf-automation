@@ -49,7 +49,7 @@ export const getSurveyEmailHtml = (doctorName) => `
             >Start Survey</a>
             <p style="margin-top: 15px; font-size: 14px; color: #555555;">
                 If the button does not work, please use this link:<br />
-                <a href="[SurveyLink]" style="color: #00bf6f; text-decoration: underline; word-break: break-all;">[SurveyLink]</a>
+                <a href="[SurveyLink]" style="color: #00bf6f; text-decoration: underline; word-break: break-all; font-size: 11px;">[SurveyLink]</a>
             </p>
         </div>
         <p style="color: #555555; font-size: 16px; line-height: 1.6; text-align: center">
