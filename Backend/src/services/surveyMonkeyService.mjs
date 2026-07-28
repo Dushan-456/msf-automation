@@ -582,14 +582,33 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
     { headers }
   );
 
-  // Find invite message
+  // Find original invite message
   const inviteMessage = messagesRes.data.data.find(m => m.type === 'invite');
   if (!inviteMessage) {
     throw new Error(`No invite message found for Collector ID: ${collectorId}`);
   }
-  const messageId = inviteMessage.id;
 
-  // 2. Format emails
+  // 2. Fetch original message details to get the exact subject and body
+  const msgDetailRes = await axios.get(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${inviteMessage.id}`,
+    { headers }
+  );
+  const { subject, body_text, body_html } = msgDetailRes.data;
+
+  // 3. Create a NEW message in the same collector (fixes 400 "Message has already been sent" error)
+  const newMsgRes = await axios.post(
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
+    {
+      type: "invite",
+      subject,
+      body_text,
+      body_html
+    },
+    { headers }
+  );
+  const newMsgId = newMsgRes.data.id;
+
+  // 4. Format emails
   const cleanEmails = newEmailsString.replace(/"/g, "");
   const emailArray = cleanEmails
     .split(/[;,]/)
@@ -600,9 +619,9 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
     throw new Error("No valid emails provided.");
   }
 
-  // 3. Add recipients
+  // 5. Add recipients to the newly created message
   const bulkRes = await axios.post(
-    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/recipients/bulk`,
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${newMsgId}/recipients/bulk`,
     { contacts: emailArray },
     { headers }
   );
@@ -613,9 +632,9 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
     );
   }
 
-  // 4. Send to newly added unsent recipients
+  // 6. Send the new message
   const sendRes = await axios.post(
-    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${messageId}/send`,
+    `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages/${newMsgId}/send`,
     {},
     { headers }
   );
