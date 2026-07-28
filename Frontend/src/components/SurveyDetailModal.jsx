@@ -26,6 +26,11 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
   // Copy
   const [copied, setCopied] = useState(false);
 
+  // Add Invites
+  const [isAddInvitesOpen, setIsAddInvitesOpen] = useState(false);
+  const [newEmails, setNewEmails] = useState('');
+  const [isAddingInvites, setIsAddingInvites] = useState(false);
+
   // Reminder
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -117,6 +122,34 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
       }
     } finally {
       setIsSending(false);
+    }
+  };
+
+  // ── Add New Invites ──
+  const handleAddInvites = async () => {
+    if (!newEmails.trim()) return;
+    setIsAddingInvites(true);
+    try {
+      await api.post(`/collectors/${selectedCollector.id}/invites`, { emails: newEmails });
+      showToast('New invites successfully sent!', 'success');
+      setNewEmails('');
+      setIsAddInvitesOpen(false);
+      // Refresh tracking data
+      setTrackingLoading(true);
+      api.get(`/collectors/${selectedCollector.id}/tracking`)
+        .then(res => setRecipients(Array.isArray(res.data) ? res.data : []))
+        .catch(err => console.error('Tracking fetch error:', err))
+        .finally(() => setTrackingLoading(false));
+    } catch (err) {
+      const isRateLimit = err.response?.status === 429 || err.response?.data?.error === 'RateLimit';
+      if (isRateLimit) {
+        showToast('🚫 SurveyMonkey API daily limit reached.', 'error');
+      } else {
+        const errorMsg = err.response?.data?.error || err.message;
+        showToast(`Failed to send new invites: ${errorMsg}`, 'error');
+      }
+    } finally {
+      setIsAddingInvites(false);
     }
   };
 
@@ -350,9 +383,23 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                     </div>
                   )}
 
-                  {/* Copy Table Button */}
+                  {/* Action Buttons */}
                   {!trackingLoading && filteredRecipients.length > 0 && (
-                    <div className="flex justify-end mb-2">
+                    <div className="flex justify-end gap-2 mb-2">
+                      <button
+                        onClick={() => setIsAddInvitesOpen(!isAddInvitesOpen)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${
+                          isAddInvitesOpen
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-800'
+                            : 'bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-md'
+                        }`}
+                        title="Add new invites to this collector"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add New Invites
+                      </button>
                       <button
                         onClick={handleCopyTable}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${
@@ -378,6 +425,42 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
                           </>
                         )}
                       </button>
+                    </div>
+                  )}
+
+                  {/* Add Invites Form */}
+                  {isAddInvitesOpen && !trackingLoading && filteredRecipients.length > 0 && (
+                    <div className="mb-4 p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl transition-all">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1.5 uppercase tracking-wider">
+                        Email Addresses (comma separated)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newEmails}
+                          onChange={(e) => setNewEmails(e.target.value)}
+                          placeholder="e.g. doctor1@example.com, doctor2@test.com"
+                          className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                          disabled={isAddingInvites}
+                        />
+                        <button
+                          onClick={handleAddInvites}
+                          disabled={isAddingInvites || !newEmails.trim()}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isAddingInvites ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Sending...
+                            </>
+                          ) : (
+                            'Send Invites'
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
