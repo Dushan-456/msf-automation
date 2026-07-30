@@ -6,7 +6,10 @@
 const errorHandler = (err, req, res, next) => {
     console.error(`[Error] ${req.method} ${req.originalUrl}:`, err.message);
     if (err.response) {
+        const authHeader = err.config?.headers?.Authorization || err.config?.headers?.authorization || '';
+        const tokenSnippet = authHeader.substring(0, 15) + '...';
         console.error(`  └─ SM API: ${err.config?.method?.toUpperCase()} ${err.config?.url}`);
+        console.error(`  └─ Token: ${tokenSnippet}`);
         console.error(`  └─ Status: ${err.response.status}`, JSON.stringify(err.response.data));
     }
 
