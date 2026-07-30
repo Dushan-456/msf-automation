@@ -122,9 +122,10 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
         title: survey.title, 
         collectorId: selectedCollector.id 
       });
-      showToast('Reminders successfully sent to non-respondents!', 'success');
       setIsConfirmOpen(false);
-      onClose();
+      showToast('Reminders successfully sent to non-respondents!', 'success');
+      // Delay close so toast is visible
+      setTimeout(() => onClose(), 2500);
     } catch (err) {
       const isRateLimit = err.response?.status === 429 || err.response?.data?.error === 'RateLimit';
       if (isRateLimit) {
