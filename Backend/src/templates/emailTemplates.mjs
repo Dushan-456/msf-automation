@@ -78,5 +78,20 @@ export const getSurveyEmailHtml = (doctorName) => `
  * @param {string} doctorName - The doctor's name.
  * @returns {string} Plain text email body.
  */
-export const getSurveyEmailText = (doctorName) =>
-    `Dear Sir/Madam, On the recommendation of the AAAEC, the Board of Management of the PGIM and the Senate of the University of Colombo have approved the implementation of an online MSF submission system in parallel to the manual process for all postgraduate trainees of the PGIM. As a result, the process of submitting and analysing the multi-source feedback (formerly known as the Peer Team Rating forms) has been changed. According to the guidelines, an MD trainee is expected to complete two rounds of MSF, once prior to the MD exam and once during the post MD training. The relevant trainee should nominate 15 rators for that. PGIM trainee ${doctorName} has nominated you as one rator for this purpose. Therefore, I kindly request you to fill the MSF form using the below link.:\n\n[SurveyLink]\n\nThank you!\n\n---\nTo unsubscribe from these emails, click here: [OptOutLink]\nView our Privacy Policy: [PrivacyLink]\n[FooterLink]`;
+export const getSurveyEmailText = (doctorName) => `Dear Sir/Madam,
+
+On the recommendation of the AAAEC, the Board of Management of the PGIM and the Senate of the University of Colombo have approved the implementation of an online MSF submission system in parallel to the manual process for all postgraduate trainees of the PGIM. As a result, the process of submitting and analysing the multi-source feedback (formerly known as the Peer Team Rating forms) has been changed.
+
+According to the guidelines, an MD trainee is expected to complete two rounds of MSF, once prior to the MD exam and once during the post MD training. The relevant trainee should nominate 15 rators for that.
+
+PGIM trainee ${doctorName} has nominated you as one rator for this purpose. Therefore, I kindly request you to fill the MSF form using the below link.:
+
+[SurveyLink]
+
+Thank you!
+
+---
+To unsubscribe from these emails, click here: [OptOutLink]
+View our Privacy Policy: [PrivacyLink]
+[FooterLink]
+`;
