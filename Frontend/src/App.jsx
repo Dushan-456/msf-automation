@@ -11,6 +11,7 @@ import SubjectUpload from './pages/SubjectUpload';
 import SubjectSettings from './pages/SubjectSettings';
 import TokenSettings from './pages/TokenSettings';
 import UserManagement from './pages/UserManagement';
+import EmailSettings from './pages/EmailSettings';
 import Login from './pages/Login';
 import LogoutModal from './components/LogoutModal';
 
@@ -110,11 +111,13 @@ function App() {
                 <>
                   <Route path="/token-settings" element={<TokenSettings />} />
                   <Route path="/user-management" element={<UserManagement />} />
+                  <Route path="/email-settings" element={<EmailSettings />} />
                 </>
               ) : (
                 <>
                   <Route path="/token-settings" element={<Navigate to="/" replace />} />
                   <Route path="/user-management" element={<Navigate to="/" replace />} />
+                  <Route path="/email-settings" element={<Navigate to="/" replace />} />
                 </>
               )}
 
