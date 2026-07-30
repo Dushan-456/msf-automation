@@ -2,6 +2,38 @@ import axios from "axios";
 import { getSurveyEmailHtml, getSurveyEmailText } from '../templates/emailTemplates.mjs';
 import ApiToken from '../models/ApiToken.mjs';
 import SurveyCache from '../models/SurveyCache.mjs';
+import { getSetting } from '../models/Settings.mjs';
+
+/**
+ * Builds the email body payload for SurveyMonkey message creation.
+ * Reads the 'email_format' setting from DB: 'html' includes body_html, 'text' omits it.
+ * Falls back to built-in templates if no custom template is stored.
+ * @param {string} doctorName - used to personalise the fallback template
+ * @returns {{ body_text: string, body_html?: string }}
+ */
+const buildEmailPayload = async (doctorName) => {
+  const [format, storedHtml, storedText] = await Promise.all([
+    getSetting('email_format'),
+    getSetting('email_body_html'),
+    getSetting('email_body_text'),
+  ]);
+
+  const useHtml = (format || 'text') === 'html';
+
+  // Replace [DoctorName] placeholder in stored templates; fall back to built-in generators
+  const bodyText = (storedText && storedText.trim())
+    ? storedText.replace(/\[DoctorName\]/g, doctorName)
+    : getSurveyEmailText(doctorName);
+
+  if (useHtml) {
+    const bodyHtml = (storedHtml && storedHtml.trim())
+      ? storedHtml.replace(/\[DoctorName\]/g, doctorName)
+      : getSurveyEmailHtml(doctorName);
+    return { body_text: bodyText, body_html: bodyHtml };
+  }
+
+  return { body_text: bodyText };
+};
 
 // SurveyMonkey API Config
 const getHeaders = async () => {
@@ -186,16 +218,15 @@ export const processSurveyMonkeyWorkflow = async (data, onProgress = null) => {
     );
     collectorId = collectorRes.data.id;
 
-    // Step 5: Create Message
-    const emailBodyHtml = getSurveyEmailHtml(doctorName);
+    // Step 5: Create Message (format controlled by Email Settings in admin panel)
+    const emailPayload = await buildEmailPayload(doctorName);
 
     const messageRes = await axios.post(
       `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
       {
         type: "invite",
         subject: title,
-        body_text: getSurveyEmailText(doctorName),
-        body_html: emailBodyHtml,
+        ...emailPayload,
       },
       { headers },
     );
@@ -339,7 +370,8 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
   }
 
   // Step 3: Create a reminder message
-  const emailBodyHtml = getSurveyEmailHtml(doctorName);
+  // Format (HTML vs plain text) is controlled by Email Settings in the admin panel
+  const emailPayload = await buildEmailPayload(doctorName);
 
   const createMessageRes = await axios.post(
     `https://api.surveymonkey.com/v3/collectors/${collectorId}/messages`,
@@ -347,8 +379,7 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
       type: "reminder",
       recipient_status: "has_not_responded",
       subject: `Gentle Reminder: - ${surveyTitle}`,
-      body_text: getSurveyEmailText(doctorName),
-      body_html: emailBodyHtml,
+      ...emailPayload,
     },
     { headers },
   );
@@ -664,8 +695,8 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
     doctorName = subject.replace(titlePrefix, "").split(trainerPrefix)[0].trim() || "the trainee";
   }
 
-  const emailBodyHtml = getSurveyEmailHtml(doctorName);
-  const emailBodyText = getSurveyEmailText(doctorName);
+  // Format (HTML vs plain text) is controlled by Email Settings in the admin panel
+  const emailPayload = await buildEmailPayload(doctorName);
 
   // 3. Create a NEW message in the same collector (fixes 400 "Message has already been sent" error)
   const newMsgRes = await axios.post(
@@ -673,8 +704,7 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
     {
       type: "invite",
       subject: subject || inviteMessage.subject || "Survey Invitation",
-      body_text: emailBodyText,
-      body_html: emailBodyHtml
+      ...emailPayload,
     },
     { headers }
   );
