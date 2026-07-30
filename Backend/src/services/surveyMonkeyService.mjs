@@ -299,7 +299,7 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
   if (!collectorId) {
     // Step 2: Fetch the collector for the given survey ID
     const collectorsRes = await axios.get(
-      `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors`,
+      `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors?include=type,status`,
       { headers }
     );
 
@@ -350,7 +350,7 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
 export const fetchSurveyCollectors = async (surveyId) => {
   const headers = await getHeaders();
   const res = await axios.get(
-    `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors?per_page=50`,
+    `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors?per_page=50&include=type,status`,
     { headers }
   );
   const raw = res.data?.data || [];
@@ -436,7 +436,7 @@ export const fetchRecipientTracking = async (surveyId) => {
   const headers = await getHeaders();
 
   const collectorsRes = await axios.get(
-    `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors`,
+    `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors?include=type`,
     { headers }
   );
 
