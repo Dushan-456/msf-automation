@@ -143,8 +143,8 @@ export const getAllSurveys = asyncHandler(async (req, res) => {
 
 export const sendReminders = asyncHandler(async (req, res) => {
     const { surveyId } = req.params;
-    const { title } = req.body;
-    await sendReminderToNonRespondents(surveyId, title);
+    const { title, collectorId } = req.body;
+    await sendReminderToNonRespondents(surveyId, title, collectorId);
     res.json({ success: true, message: 'Reminders successfully sent to non-respondents.' });
 });
 
