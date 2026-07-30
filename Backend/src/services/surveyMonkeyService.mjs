@@ -294,10 +294,29 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
     doctorName = surveyTitle.replace(titlePrefix, "").split(trainerPrefix)[0].trim() || "the trainee";
   }
 
-  let collectorId = providedCollectorId;
+  // Step 2: Resolve the collector ID - always verify it's accessible
+  let collectorId = null;
+
+  // If a collectorId was provided, verify it's accessible first
+  if (providedCollectorId) {
+    try {
+      const verifyRes = await axios.get(
+        `https://api.surveymonkey.com/v3/collectors/${providedCollectorId}`,
+        { headers }
+      );
+      console.log(`[Reminder] Verified collector ${providedCollectorId}: type=${verifyRes.data.type}, status=${verifyRes.data.status}`);
+      if (verifyRes.data.type === 'email') {
+        collectorId = providedCollectorId;
+      } else {
+        console.warn(`[Reminder] Provided collector ${providedCollectorId} is type "${verifyRes.data.type}", not email. Falling back to survey collectors.`);
+      }
+    } catch (verifyErr) {
+      console.warn(`[Reminder] Provided collector ${providedCollectorId} not accessible (${verifyErr.response?.status}). Falling back to survey collectors.`);
+    }
+  }
 
   if (!collectorId) {
-    // Step 2: Fetch the collector for the given survey ID
+    // Fetch collectors for the survey
     const collectorsRes = await axios.get(
       `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors?include=type,status`,
       { headers }
@@ -307,13 +326,16 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
       throw new Error(`No collectors found for Survey ID: ${surveyId}`);
     }
 
+    console.log(`[Reminder] Collectors for survey ${surveyId}:`, collectorsRes.data.data.map(c => ({ id: c.id, name: c.name, type: c.type, status: c.status })));
+
     // Find the first email collector
     const emailCollector = collectorsRes.data.data.find(c => c.type === 'email');
     if (!emailCollector) {
-      throw new Error(`No email collector found for Survey ID: ${surveyId}. Reminders can only be sent via email collectors.`);
+      throw new Error(`No email collector found for Survey ID: ${surveyId}. Available types: ${collectorsRes.data.data.map(c => c.type).join(', ')}`);
     }
 
     collectorId = emailCollector.id;
+    console.log(`[Reminder] Using email collector: ${collectorId}`);
   }
 
   // Step 3: Create a reminder message
@@ -584,6 +606,23 @@ export const markSurveyComplete = async (surveyId) => {
  */
 export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmailsString) => {
   const headers = await getHeaders();
+
+  // Verify collector is accessible and is email type
+  try {
+    const verifyRes = await axios.get(
+      `https://api.surveymonkey.com/v3/collectors/${collectorId}`,
+      { headers }
+    );
+    console.log(`[AddInvites] Verified collector ${collectorId}: type=${verifyRes.data.type}, status=${verifyRes.data.status}`);
+    if (verifyRes.data.type !== 'email') {
+      throw new Error(`Collector ${collectorId} is type "${verifyRes.data.type}", not email. Invites can only be added to email collectors.`);
+    }
+  } catch (verifyErr) {
+    if (verifyErr.response?.status === 404) {
+      throw new Error(`Collector ${collectorId} not found or not accessible with the current API token.`);
+    }
+    throw verifyErr;
+  }
 
   // 1. Fetch messages for the collector
   const messagesRes = await axios.get(
