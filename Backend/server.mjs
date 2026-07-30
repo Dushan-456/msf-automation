@@ -7,6 +7,7 @@ import surveyRoutes from './src/routes/surveyRoutes.mjs';
 import subjectRoutes from './src/routes/subjectRoutes.mjs';
 import tokenRoutes from './src/routes/tokenRoutes.mjs';
 import userRoutes from './src/routes/userRoutes.mjs';
+import settingsRoutes from './src/routes/settingsRoutes.mjs';
 import errorHandler from './src/middleware/errorHandler.mjs';
 import { seedAdminUser } from './src/seed/autoSeed.mjs';
 import User from './src/models/User.mjs';
@@ -71,6 +72,7 @@ app.use('/api/v1', surveyRoutes);
 app.use('/api/v1/subjects', subjectRoutes);
 app.use('/api/v1/tokens', tokenRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
