@@ -5,6 +5,10 @@
  */
 const errorHandler = (err, req, res, next) => {
     console.error(`[Error] ${req.method} ${req.originalUrl}:`, err.message);
+    if (err.response) {
+        console.error(`  └─ SM API: ${err.config?.method?.toUpperCase()} ${err.config?.url}`);
+        console.error(`  └─ Status: ${err.response.status}`, JSON.stringify(err.response.data));
+    }
 
     // SurveyMonkey API rate limit
     if (err.response?.status === 429 || err.response?.data?.error === 'RateLimit') {
