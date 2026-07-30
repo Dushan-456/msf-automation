@@ -59,7 +59,12 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
       .then(res => {
         const list = Array.isArray(res.data) ? res.data : [];
         setCollectors(list);
-        if (list.length > 0) setSelectedCollector(list[0]);
+        const emailCollector = list.find(c => c.type === 'email');
+        if (emailCollector) {
+          setSelectedCollector(emailCollector);
+        } else if (list.length > 0) {
+          setSelectedCollector(list[0]);
+        }
       })
       .catch(err => {
         console.error('Collectors fetch error:', err);
@@ -105,10 +110,18 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
 
   // ── Send reminder ──
   const handleSendReminder = async () => {
-    if (!survey) return;
+    if (!survey || !selectedCollector) return;
+    if (selectedCollector.type !== 'email') {
+      showToast('Reminders can only be sent to Email collectors.', 'error');
+      setIsConfirmOpen(false);
+      return;
+    }
     setIsSending(true);
     try {
-      await api.post(`/surveys/${survey.id}/reminders`, { title: survey.title });
+      await api.post(`/surveys/${survey.id}/reminders`, { 
+        title: survey.title, 
+        collectorId: selectedCollector.id 
+      });
       showToast('Reminders successfully sent to non-respondents!', 'success');
       setIsConfirmOpen(false);
       onClose();
@@ -127,7 +140,11 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
 
   // ── Add New Invites ──
   const handleAddInvites = async () => {
-    if (!newEmails.trim()) return;
+    if (!newEmails.trim() || !selectedCollector) return;
+    if (selectedCollector.type !== 'email') {
+      showToast('Invites can only be added to Email collectors.', 'error');
+      return;
+    }
     setIsAddingInvites(true);
     try {
       await api.post(`/collectors/${selectedCollector.id}/invites`, { emails: newEmails });
