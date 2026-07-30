@@ -91,6 +91,26 @@ mongoose.connect(MONGO_URI)
         // Auto-seed admin user
         await seedAdminUser();
         
+        // Diagnostic: Check SM API token scopes on startup
+        try {
+            const ApiToken = (await import('./src/models/ApiToken.mjs')).default;
+            const activeTokenDoc = await ApiToken.findOne({ isActive: true });
+            const token = activeTokenDoc ? activeTokenDoc.token : process.env.SM_ACCESS_TOKEN;
+            if (token) {
+                const axios = (await import('axios')).default;
+                const meRes = await axios.get('https://api.surveymonkey.com/v3/users/me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const scopes = meRes.data.scopes || {};
+                console.log(`🔑 SM API Token: account="${meRes.data.username || meRes.data.email}", source=${activeTokenDoc ? 'database' : '.env'}`);
+                console.log(`   Scopes granted:`, Object.keys(scopes).filter(k => scopes[k]?.available).join(', ') || JSON.stringify(scopes));
+            } else {
+                console.warn('⚠️ No SurveyMonkey API token configured (neither in DB nor .env)');
+            }
+        } catch (e) {
+            console.warn('⚠️ SM API token check failed:', e.response?.data?.error?.message || e.message);
+        }
+        
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch((err) => {
