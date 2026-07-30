@@ -257,7 +257,7 @@ export const processSurveyMonkeyWorkflow = async (data, onProgress = null) => {
 /**
  * Sends a reminder to non-respondents for a given survey.
  */
-export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClient = null) => {
+export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClient = null, providedCollectorId = null) => {
   const headers = await getHeaders();
 
   // Use the title from the client if provided, otherwise fetch from SM API (1 API call)
@@ -294,18 +294,27 @@ export const sendReminderToNonRespondents = async (surveyId, surveyTitleFromClie
     doctorName = surveyTitle.replace(titlePrefix, "").split(trainerPrefix)[0].trim() || "the trainee";
   }
 
-  // Step 2: Fetch the collector for the given survey ID
-  const collectorsRes = await axios.get(
-    `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors`,
-    { headers }
-  );
+  let collectorId = providedCollectorId;
 
-  if (!collectorsRes.data || collectorsRes.data.data.length === 0) {
-    throw new Error(`No collectors found for Survey ID: ${surveyId}`);
+  if (!collectorId) {
+    // Step 2: Fetch the collector for the given survey ID
+    const collectorsRes = await axios.get(
+      `https://api.surveymonkey.com/v3/surveys/${surveyId}/collectors`,
+      { headers }
+    );
+
+    if (!collectorsRes.data || collectorsRes.data.data.length === 0) {
+      throw new Error(`No collectors found for Survey ID: ${surveyId}`);
+    }
+
+    // Find the first email collector
+    const emailCollector = collectorsRes.data.data.find(c => c.type === 'email');
+    if (!emailCollector) {
+      throw new Error(`No email collector found for Survey ID: ${surveyId}. Reminders can only be sent via email collectors.`);
+    }
+
+    collectorId = emailCollector.id;
   }
-
-  // Grab the first collector's ID
-  const collectorId = collectorsRes.data.data[0].id;
 
   // Step 3: Create a reminder message
   const emailBodyHtml = getSurveyEmailHtml(doctorName);
