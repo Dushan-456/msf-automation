@@ -33,7 +33,7 @@ export const setSetting = async (key, value) => {
     return Settings.findOneAndUpdate(
         { key },
         { key, value },
-        { upsert: true, new: true, runValidators: true }
+        { upsert: true, returnDocument: 'after', runValidators: true }
     );
 };
 
