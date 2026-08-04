@@ -2,7 +2,7 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import asyncHandler from '../middleware/asyncHandler.mjs';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity, updateRowStatus } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService, addNewEmailsToCollectorByCollectorId } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService, addNewEmailsToCollectorByCollectorId, getDashboardStats } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -235,4 +235,9 @@ export const addNewInvites = asyncHandler(async (req, res) => {
 
     const data = await addNewEmailsToCollectorByCollectorId(collectorId, emails);
     res.json({ success: true, message: 'New invites sent successfully.', data });
+});
+
+export const getDashboardAnalytics = asyncHandler(async (req, res) => {
+    const data = await getDashboardStats();
+    res.json(data);
 });
