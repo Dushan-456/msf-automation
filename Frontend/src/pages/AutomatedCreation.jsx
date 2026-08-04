@@ -167,7 +167,7 @@ const AutomatedCreation = () => {
   const isUploadingOrProcessing = jobId !== null;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    <div className="p-6 w-full bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Automated Creation</h1>
