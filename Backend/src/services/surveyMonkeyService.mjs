@@ -743,3 +743,41 @@ export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmail
 
   return { added: bulkRes.data, sendResponse: sendRes.data };
 };
+
+export const getDashboardStats = async () => {
+  // 1. Sync cache first to ensure we have the latest data
+  await syncSurveysToCache();
+
+  const folderToBeAnalyzed = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
+  const folderAnalyzed = process.env.ANALYZED_FOLDER_ID || "2451474";
+
+  const [toBeAnalyzedCount, readyForAnalysisCount, analyzedCompletedCount] = await Promise.all([
+      SurveyCache.countDocuments({ folder_id: folderToBeAnalyzed }),
+      SurveyCache.countDocuments({ folder_id: folderToBeAnalyzed, response_count: { $gte: 12 } }),
+      SurveyCache.countDocuments({ folder_id: folderAnalyzed })
+  ]);
+
+  // Monthly aggregates
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [monthlyToBeAnalyzed, monthlyReady, monthlyAnalyzed] = await Promise.all([
+      SurveyCache.countDocuments({ folder_id: folderToBeAnalyzed, date_modified: { $gte: startOfMonth } }),
+      SurveyCache.countDocuments({ folder_id: folderToBeAnalyzed, response_count: { $gte: 12 }, date_modified: { $gte: startOfMonth } }),
+      SurveyCache.countDocuments({ folder_id: folderAnalyzed, date_modified: { $gte: startOfMonth } })
+  ]);
+
+  return {
+      fullSummary: {
+          toBeAnalyzed: toBeAnalyzedCount,
+          readyForAnalysis: readyForAnalysisCount,
+          analyzedCompleted: analyzedCompletedCount
+      },
+      monthlySummary: {
+          toBeAnalyzed: monthlyToBeAnalyzed,
+          readyForAnalysis: monthlyReady,
+          analyzedCompleted: monthlyAnalyzed,
+          month: now.toISOString()
+      }
+  };
+};
