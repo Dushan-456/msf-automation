@@ -1,13 +1,39 @@
 import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import api from "../utils/api";
 import logo from "../assets/images/pgim-msf.png";
 import msfLogo from "../assets/images/sm.png";
 
 
 const Sidebar = ({ user, onLogout }) => {
   const location = useLocation();
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await api.get('/surveys/dashboard-stats');
+        setStats(res.data.fullSummary);
+      } catch (error) {
+        console.error("Error fetching sidebar stats:", error);
+      }
+    };
+    fetchStats();
+  }, [location.pathname]);
+
+  const getBadgeCount = (path) => {
+    if (!stats) return null;
+    if (path === "/ready-for-analysis" && stats.readyForAnalysis > 0) return stats.readyForAnalysis;
+    if (path === "/to-be-analyzed" && stats.toBeAnalyzed > 0) return stats.toBeAnalyzed;
+    if (path === "/analyzed-completed" && stats.analyzedCompleted > 0) return stats.analyzedCompleted;
+    return null;
+  };
 
   const surveyNavItems = [
-    { name: "Automated Creation", path: "/" },
+    { name: "Dashboard", path: "/" },
+    { name: "Automated Creation", path: "/automated-creation" },
     { name: "All Surveys", path: "/all-surveys" },
     { name: "Ready for Analysis", path: "/ready-for-analysis" },
     { name: "To Be Analyzed", path: "/to-be-analyzed" },
@@ -28,6 +54,12 @@ const Sidebar = ({ user, onLogout }) => {
   const getIcon = (path) => {
     switch (path) {
       case "/":
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        );
+      case "/automated-creation":
         return (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -104,13 +136,18 @@ const Sidebar = ({ user, onLogout }) => {
         }`}
       >
         {getIcon(item.path)}
-        <span className="font-medium">{item.name}</span>
+        <span className="font-medium flex-1">{item.name}</span>
+        {getBadgeCount(item.path) && (
+          <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm shadow-red-500/50">
+            {getBadgeCount(item.path)}
+          </span>
+        )}
       </Link>
     </li>
   );
 
   return (
-    <div className="w-74 bg-gray-900 text-white min-h-screen flex flex-col shadow-xl fixed left-0 top-0 z-50">
+    <div className="w-80 bg-gray-900 text-white min-h-screen flex flex-col shadow-xl fixed left-0 top-0 z-50">
       <div className="p-6 border-b border-gray-800">
         <Link to="/" className="flex gap-2 hover:opacity-80 transition-opacity">
           <img src={logo} alt="logo" className="w-full" />
