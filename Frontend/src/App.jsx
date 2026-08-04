@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
+import Dashboard from './pages/Dashboard';
 import AutomatedCreation from './pages/AutomatedCreation';
 import AllSurveys from './pages/AllSurveys';
 import ReadyForAnalysis from './pages/ReadyForAnalysis';
@@ -93,12 +94,13 @@ function App() {
         <Sidebar user={user} onLogout={requestLogout} />
         
         {/* Main Content Area */}
-        <div className="flex-1 ml-64 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 ml-80 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
           <TopHeader user={user} theme={theme} toggleTheme={toggleTheme} onLogout={requestLogout} />
           
           <main className="flex-1 w-full p-6">
             <Routes>
-              <Route path="/" element={<AutomatedCreation />} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/automated-creation" element={<AutomatedCreation />} />
               <Route path="/all-surveys" element={<AllSurveys />} />
               <Route path="/ready-for-analysis" element={<ReadyForAnalysis />} />
               <Route path="/to-be-analyzed" element={<ToBeAnalyzed />} />
