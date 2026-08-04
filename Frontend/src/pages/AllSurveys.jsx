@@ -77,7 +77,7 @@ const AllSurveys = () => {
   };
 
   return (
-    <div className="p-5 max-w-7xl mx-auto h-[calc(100vh)] flex flex-col pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    <div className="p-5 w-full h-[calc(100vh)] flex flex-col pt-6 bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       {/* Header and Search */}
       <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
