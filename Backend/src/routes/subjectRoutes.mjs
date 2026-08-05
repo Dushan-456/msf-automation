@@ -12,13 +12,13 @@ const router = express.Router();
 const pdfUpload = multer({
     dest: 'uploads/',
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+        if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
             cb(null, true);
         } else {
             cb(new Error('Only PDF files are allowed'), false);
         }
     },
-    limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit
+    limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit (Gmail attachment limit)
 });
 
 // Multer config for CSV uploads
@@ -59,6 +59,7 @@ router.post('/upload-stream', pdfUpload.array('pdfFiles', 20), uploadAndSendStre
 // Handle Multer validation errors for PDF uploads
 router.use((err, req, res, next) => {
     if (err instanceof multer.MulterError || err.message === 'Only PDF files are allowed') {
+        console.error('Multer Error in subjectRoutes:', err);
         return res.status(400).json({ error: err.message });
     }
     next(err);
