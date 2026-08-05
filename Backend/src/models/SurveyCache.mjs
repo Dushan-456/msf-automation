@@ -18,6 +18,18 @@ const surveyCacheSchema = new mongoose.Schema({
         type: Date,
         index: true // For descending sort
     },
+    date_created: {
+        type: Date
+    },
+    analyzed_at: {
+        type: Date
+    },
+    specialty: {
+        type: String
+    },
+    level: {
+        type: String
+    },
     response_count: {
         type: Number,
         default: 0
