@@ -83,6 +83,14 @@ export const syncSurveysToCache = async () => {
                     reachedCachedData = true;
                 }
 
+                let specialty = undefined;
+                let level = undefined;
+                const titleMatch = survey.title.match(/Specialty\s*-\s*(.*?)\s*\(\s*(.*?)\s*\)$/);
+                if (titleMatch) {
+                    specialty = titleMatch[1].trim();
+                    level = titleMatch[2].trim();
+                }
+
                 bulkOps.push({
                     updateOne: {
                         filter: { smId: survey.id },
@@ -92,9 +100,15 @@ export const syncSurveysToCache = async () => {
                                 title: survey.title,
                                 href: survey.href,
                                 date_modified: smDate,
+                                ...(survey.date_created && { date_created: new Date(survey.date_created) }),
+                                ...(specialty && { specialty }),
+                                ...(level && { level }),
                                 response_count: survey.response_count || 0,
                                 folder_id: survey.folder_id,
                                 survey_state: survey.survey_state
+                            },
+                            $setOnInsert: {
+                                ...(!survey.date_created && { date_created: smDate })
                             }
                         },
                         upsert: true
@@ -628,6 +642,12 @@ export const markSurveyComplete = async (surveyId) => {
     { folder_id: completedFolderId },
     { headers }
   );
+
+  // Instantly reflect the folder change in our local MongoDB cache
+  await SurveyCache.updateOne(
+    { smId: surveyId },
+    { $set: { folder_id: completedFolderId, survey_state: res.data.analyze_url, analyzed_at: new Date() } }
+  );
   
   return res.data;
 };
@@ -761,23 +781,106 @@ export const getDashboardStats = async () => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [monthlyToBeAnalyzed, monthlyReady, monthlyAnalyzed] = await Promise.all([
-      SurveyCache.countDocuments({ folder_id: folderToBeAnalyzed, date_modified: { $gte: startOfMonth } }),
+  const [monthlyCreated, monthlyReady, monthlyAnalyzed] = await Promise.all([
+      SurveyCache.countDocuments({ date_created: { $gte: startOfMonth } }),
       SurveyCache.countDocuments({ folder_id: folderToBeAnalyzed, response_count: { $gte: 12 }, date_modified: { $gte: startOfMonth } }),
       SurveyCache.countDocuments({ folder_id: folderAnalyzed, date_modified: { $gte: startOfMonth } })
   ]);
+
+  // 6-Month Trend Data
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+  sixMonthsAgo.setDate(1);
+  sixMonthsAgo.setHours(0,0,0,0);
+
+  const createdAggregate = await SurveyCache.aggregate([
+    { $match: { date_created: { $gte: sixMonthsAgo } } },
+    { $group: { _id: { year: { $year: "$date_created" }, month: { $month: "$date_created" } }, count: { $sum: 1 } } },
+    { $sort: { "_id.year": 1, "_id.month": 1 } }
+  ]);
+
+  const analyzedAggregate = await SurveyCache.aggregate([
+    { $match: { analyzed_at: { $gte: sixMonthsAgo } } },
+    { $group: { _id: { year: { $year: "$analyzed_at" }, month: { $month: "$analyzed_at" } }, count: { $sum: 1 } } },
+    { $sort: { "_id.year": 1, "_id.month": 1 } }
+  ]);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const trendDataMap = {};
+  
+  for (let i = 0; i < 6; i++) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (5 - i));
+    const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    trendDataMap[key] = { name: key, created: 0, analyzed: 0 };
+  }
+
+  createdAggregate.forEach(item => {
+    const key = `${monthNames[item._id.month - 1]} ${item._id.year}`;
+    if (trendDataMap[key]) trendDataMap[key].created = item.count;
+  });
+
+  analyzedAggregate.forEach(item => {
+    const key = `${monthNames[item._id.month - 1]} ${item._id.year}`;
+    if (trendDataMap[key]) trendDataMap[key].analyzed = item.count;
+  });
+
+  const trendData = Object.values(trendDataMap);
+
+  // Specialty Breakdown
+  const specialtyAggregate = await SurveyCache.aggregate([
+    { $match: { specialty: { $exists: true, $ne: "" } } },
+    { $group: { _id: "$specialty", value: { $sum: 1 } } },
+    { $sort: { value: -1 } },
+    { $limit: 10 }
+  ]);
+
+  const specialtyData = specialtyAggregate.map(item => ({
+    name: item._id,
+    value: item.value
+  }));
+
+  // Level Breakdown
+  const levelAggregate = await SurveyCache.aggregate([
+    { $match: { level: { $exists: true, $ne: "" } } },
+    { $group: { _id: "$level", value: { $sum: 1 } } },
+    { $sort: { value: -1 } },
+    { $limit: 10 }
+  ]);
+
+  const levelData = levelAggregate.map(item => ({
+    name: item._id,
+    value: item.value
+  }));
+
+  // Average Turnaround Time
+  const turnaroundAggregate = await SurveyCache.aggregate([
+    { $match: { analyzed_at: { $exists: true }, date_created: { $exists: true } } },
+    { $project: { durationMillis: { $subtract: ["$analyzed_at", "$date_created"] } } },
+    { $group: { _id: null, avgDurationMillis: { $avg: "$durationMillis" } } }
+  ]);
+
+  let avgTurnaroundDays = 0;
+  if (turnaroundAggregate.length > 0 && turnaroundAggregate[0].avgDurationMillis > 0) {
+    avgTurnaroundDays = Math.round(turnaroundAggregate[0].avgDurationMillis / (1000 * 60 * 60 * 24));
+  }
 
   return {
       fullSummary: {
           toBeAnalyzed: toBeAnalyzedCount,
           readyForAnalysis: readyForAnalysisCount,
-          analyzedCompleted: analyzedCompletedCount
+          analyzedCompleted: analyzedCompletedCount,
+          totalCreated: toBeAnalyzedCount + readyForAnalysisCount + analyzedCompletedCount
       },
       monthlySummary: {
-          toBeAnalyzed: monthlyToBeAnalyzed,
+          created: monthlyCreated,
           readyForAnalysis: monthlyReady,
           analyzedCompleted: monthlyAnalyzed,
           month: now.toISOString()
-      }
+      },
+      trendData,
+      specialtyData,
+      levelData,
+      avgTurnaroundDays
   };
 };
