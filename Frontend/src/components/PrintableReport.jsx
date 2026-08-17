@@ -208,18 +208,18 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
     }
   });
 
-  // Custom colors for recharts and tables
-  const smColors = [
-    "#00c175",
-    "#5379b4",
-    "#f8c228",
-    "#67c7cd",
-    "#ff8e51",
-    "#7f5c8e",
-    "#FFC107",
-    "#c6ba7d",
-    "#de4f5a",
-    "#768086",
+  // Soft, light pastel categorical colors
+  const modernColors = [
+    "#8f9febff", // Indigo 300
+    "#45ddc6ff", // Teal 300
+    "#ee8a96ff", // Rose 300
+    "#eec641ff", // Amber 300
+    "#b1a3e7ff", // Violet 300
+    "#4febc4ff", // Pink 300
+    "#7dd3fc", // Sky 300
+    "#6ee7b7", // Emerald 300
+    "#fdba74", // Orange 300
+    "#cbd5e1"  // Slate 300
   ];
 
   return (
@@ -229,111 +229,110 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
       style={{ minHeight: "297mm", width: "210mm", boxSizing: "border-box" }}
     >
       {/* HEADER */}
-      <div className="print-chunk  text-center  pb-4 border-b-2 border-gray-200">
-        <h1 className="text-xl font-bold mb-2 whitespace-pre-line">
+      <div className="print-chunk text-center pb-8 pt-4 mb-10 border-b border-slate-200">
+        <h1 className="text-2xl font-extrabold mb-4 text-slate-800 tracking-tight whitespace-pre-line">
           {survey.title || "Multisource Feedback Form (MSF)"}
         </h1>
-        <div className="text-sm text-gray-700 ">
-          <ul>
-            {doctorName && (
-              <li>
-                <span className="font-semibold">Doctor:</span> {doctorName}
-              </li>
-            )}
-            {trainerName && (
-              <li>
-                <span className="font-semibold">Trainer:</span> {trainerName}
-              </li>
-            )}
-            {specialty && (
-              <li>
-                <span className="font-semibold">Specialty:</span> {specialty}
-              </li>
-            )}
-          </ul>
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-slate-600">
+          {doctorName && (
+            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
+              <span className="font-bold text-slate-500 uppercase tracking-wider text-xs">Doctor:</span>
+              <span className="font-semibold text-slate-800">{doctorName}</span>
+            </div>
+          )}
+          {trainerName && (
+            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
+              <span className="font-bold text-slate-500 uppercase tracking-wider text-xs">Trainer:</span>
+              <span className="font-semibold text-slate-800">{trainerName}</span>
+            </div>
+          )}
+          {specialty && (
+            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
+              <span className="font-bold text-slate-500 uppercase tracking-wider text-xs">Specialty:</span>
+              <span className="font-semibold text-slate-800">{specialty}</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Q1: Professions */}
-      <div className="print-chunk px-12 pb-12 mb-16 page-break-inside-avoid">
-        <h2 className="text-xl font-normal text-center mb-1 text-gray-800">
+      <div className="print-chunk bg-white border border-slate-100 p-8 mb-12 shadow-sm page-break-inside-avoid">
+        <h2 className="text-lg font-bold text-slate-800 mb-1 tracking-tight">
           Q1 Profile of the Feedback Givers
         </h2>
-        <div className="text-center text-sm text-gray-500 mb-8 mt-1">
-          <span>Answered: {totalResponses}</span>
-          <span className="ml-4">Skipped: 0</span>
+        <div className="flex gap-4 text-xs font-semibold text-slate-500 mb-6 uppercase tracking-wider">
+          <span className="bg-slate-100 px-2 py-1">Answered: {totalResponses}</span>
+          <span className="bg-slate-100 px-2 py-1">Skipped: 0</span>
         </div>
-        <table className="w-full text-sm text-left border-collapse mb-8 border-b border-gray-100">
-          <thead className="bg-[#f9f9f9] border-b border-gray-100">
+        <table className="w-full text-sm text-left border-collapse mb-8 border border-slate-100 overflow-hidden">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="py-3 px-4 font-semibold text-gray-700">
+              <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs">
                 Answer Choices
               </th>
-              <th className="py-3 px-4 font-semibold text-gray-700 w-1/4">
+              <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-1/4">
                 Percentage
               </th>
-              <th className="py-3 px-4 font-semibold text-gray-700 w-1/4">
+              <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-1/4">
                 Responses
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {processedQ1.map((c, i) => (
-              <tr key={i}>
-                <td className="py-3 px-4 text-gray-800 flex items-center">
+              <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                <td className="py-3 px-4 text-slate-700 font-medium flex items-center">
                   <span
-                    className="inline-block w-4 h-4 rounded-full mr-3 shadow-sm"
-                    style={{ backgroundColor: smColors[i % smColors.length] }}
+                    className="inline-block w-3 h-3 rounded-full mr-3 shadow-sm"
+                    style={{ backgroundColor: modernColors[i % modernColors.length] }}
                   ></span>
                   {c.name}
                 </td>
-                <td className="py-3 px-4 text-gray-600">{c.percentage}%</td>
-                <td className="py-3 px-4 text-gray-600">{c.count}</td>
+                <td className="py-3 px-4 text-slate-600 font-medium">{c.percentage}%</td>
+                <td className="py-3 px-4 text-slate-600 font-medium">{c.count}</td>
               </tr>
             ))}
-            <tr className="bg-[#f9f9f9] border-t-2 border-gray-100 font-semibold">
-              <td className="py-3 px-4 text-gray-900">Total</td>
-              <td className="py-3 px-4 text-gray-900">-</td>
-              <td className="py-3 px-4 text-gray-900">{totalResponses}</td>
+            <tr className="bg-slate-50 border-t border-slate-200 font-bold">
+              <td className="py-3 px-4 text-slate-800">Total</td>
+              <td className="py-3 px-4 text-slate-800">-</td>
+              <td className="py-3 px-4 text-slate-800">{totalResponses}</td>
             </tr>
           </tbody>
         </table>
 
         {/* Q1 'Other' Comments Table */}
-        <table className="w-full text-sm text-left border-collapse border-b border-gray-100">
-          <thead className="bg-[#f9f9f9] border-b border-gray-100">
+        <table className="w-full text-sm text-left border-collapse border border-slate-100 overflow-hidden">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="py-1 px-4 font-semibold text-gray-700 w-12 text-center">
+              <th className="py-2.5 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-12 text-center">
                 #
               </th>
-              <th className="py-1 px-4 font-semibold text-gray-700">
-                OTHER (PLEASE SPECIFY)
+              <th className="py-2.5 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs">
+                Other (Please Specify)
               </th>
-              <th className="py-1 px-4 font-semibold text-gray-700 w-32 text-center">
-                DATE
+              <th className="py-2.5 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-32 text-center">
+                Date
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {commentsQ1.length > 0 ? (
               commentsQ1.map((c, i) => (
-                <tr key={i}>
-                  <td className="py-1 px-4 text-gray-500 text-center">
+                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-2.5 px-4 text-slate-400 font-semibold text-center text-xs">
                     {i + 1}
                   </td>
-                  <td className="py-1 px-4 text-gray-800">{c.text}</td>
-                  <td className="py-1 px-4 text-gray-600 font-medium whitespace-nowrap text-center">
+                  <td className="py-2.5 px-4 text-slate-700">{c.text}</td>
+                  <td className="py-2.5 px-4 text-slate-500 text-xs font-medium whitespace-nowrap text-center">
                     {c.date}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td className="py-1 px-4"></td>
-                <td className="py-1 px-4 text-gray-700 font-medium">
+                <td className="py-4 px-4 text-center text-slate-500 italic" colSpan="3">
                   There are no responses.
                 </td>
-                <td className="py-1 px-4"></td>
               </tr>
             )}
           </tbody>
@@ -341,64 +340,66 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
       </div>
 
       {/* Q2: Matrix Rating (Horizontal Bar Chart) */}
-      <div className="print-chunk pr-6 pb-12 mb-16 page-break-inside-avoid">
-        <h2 className="text-xl pl-6 font-normal text-center mb-1 text-gray-800">
-          Q2 Feedback Received (Multi-source feedback is given using a scale of
-          1 to 5 where 1 represents "Strongly Disagree" & 5 represents "Strongly
-          Agree")
+      <div className="print-chunk bg-white border border-slate-100 p-8 mb-12 shadow-sm page-break-inside-avoid">
+        <h2 className="text-lg font-bold text-slate-800 mb-1 tracking-tight">
+          Q2 Feedback Received
         </h2>
-        <div className="text-center text-sm text-gray-500 mb-8 mt-1">
-          <span>Answered: {totalResponses}</span>
-          <span className="ml-4">Skipped: 0</span>
+        <p className="text-xs text-slate-500 mb-4">
+          Multi-source feedback is given using a scale of 1 to 5 where 1 represents "Strongly Disagree" & 5 represents "Strongly Agree"
+        </p>
+        <div className="flex gap-4 text-xs font-semibold text-slate-500 mb-6 uppercase tracking-wider">
+          <span className="bg-slate-100 px-2 py-1">Answered: {totalResponses}</span>
+          <span className="bg-slate-100 px-2 py-1">Skipped: 0</span>
         </div>
-        <div className="flex justify-center w-full mt-4">
-          <div className="w-[100%] h-[420px]">
+        <div className="flex justify-center w-full mt-2">
+          <div className="w-full h-[460px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"
                 data={processedQ2}
                 margin={{ top: 5, right: 35, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="2 3" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                 <XAxis
                   type="number"
                   domain={[0, 5]}
                   ticks={[0, 1, 2, 3, 4, 5]}
-                  axisLine={{ stroke: "#8b8d91ff", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
                   tickLine={false}
+                  tick={{ fill: "#64748b", fontSize: 12, fontWeight: 500 }}
                 />
                 <YAxis
                   dataKey="name"
                   type="category"
-                  width={210}
+                  width={220}
                   interval={0}
                   tick={<CustomizedYAxisTickQ2 />}
-                  axisLine={{ stroke: "#8b8d91ff", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
                   tickLine={false}
                 />
-                <Tooltip />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
                 <Bar
                   dataKey="average"
-                  barSize={45}
-                  radius={[0, 4, 4, 0]}
+                  barSize={32}
+                  radius={[0, 6, 6, 0]}
                   isAnimationActive={false}
                 >
                   {processedQ2.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={smColors[index % smColors.length]}
+                      fill={modernColors[index % modernColors.length]}
                     />
                   ))}
                   <LabelList
                     dataKey="average"
-                    position="center"
+                    position="right"
                     style={{
-                      fill: "#635e5eff",
+                      fill: "#475569",
                       fontSize: 13,
-                      fontWeight: "900",
-                      stroke: "#fff",
-                      strokeWidth: 3,
-                      paintOrder: "stroke",
+                      fontWeight: "700"
                     }}
                   />
                 </Bar>
@@ -409,100 +410,105 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
       </div>
 
       {/* Q3: Yes/No Honesty & Integrity */}
-      <div className="print-chunk px-12 pb-12 mb-16 page-break-inside-avoid">
-        <h2 className="text-xl font-normal text-center mb-1 text-gray-800">
-          Q3 Response to the question : Honesty and Integrity: do you have
-          anyconcerns?
+      <div className="print-chunk bg-white border border-slate-100 p-8 mb-12 shadow-sm page-break-inside-avoid">
+        <h2 className="text-lg font-bold text-slate-800 mb-1 tracking-tight">
+          Q3 Honesty and Integrity: do you have any concerns?
         </h2>
-        <div className="text-center text-sm text-gray-500 mb-8 mt-1">
-          <span>Answered: {totalResponses}</span>
-          <span className="ml-4">Skipped: 0</span>
+        <div className="flex gap-4 text-xs font-semibold text-slate-500 mb-6 mt-2 uppercase tracking-wider">
+          <span className="bg-slate-100 px-2 py-1">Answered: {totalResponses}</span>
+          <span className="bg-slate-100 px-2 py-1">Skipped: 0</span>
         </div>
-        <table className="w-full text-sm text-left border-collapse border-b border-gray-100">
-          <thead className="bg-[#f9f9f9] border-b border-gray-100">
+        <table className="w-full text-sm text-left border-collapse border border-slate-100 overflow-hidden">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="py-3 px-4 font-semibold text-gray-700">
+              <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs">
                 Answer Choices
               </th>
-              <th className="py-3 px-4 font-semibold text-gray-700 w-1/4">
+              <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-1/4">
                 Percentage
               </th>
-              <th className="py-3 px-4 font-semibold text-gray-700 w-1/4">
+              <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-1/4">
                 Responses
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {processedQ3.map((c, i) => (
-              <tr key={i}>
-                <td className="py-3 px-4 text-gray-800 flex items-center">
+              <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                <td className="py-3 px-4 text-slate-700 font-medium flex items-center">
                   <span
-                    className="inline-block w-4 h-4 rounded-full mr-3 shadow-sm"
-                    style={{ backgroundColor: smColors[i % smColors.length] }}
+                    className="inline-block w-3 h-3 rounded-full mr-3 shadow-sm"
+                    style={{ backgroundColor: modernColors[i % modernColors.length] }}
                   ></span>
                   {c.name}
                 </td>
-                <td className="py-3 px-4 text-gray-600">{c.percentage}%</td>
-                <td className="py-3 px-4 text-gray-600">{c.count}</td>
+                <td className="py-3 px-4 text-slate-600 font-medium">{c.percentage}%</td>
+                <td className="py-3 px-4 text-slate-600 font-medium">{c.count}</td>
               </tr>
             ))}
-            <tr className="bg-[#f9f9f9] border-t-2 border-gray-100 font-semibold">
-              <td className="py-3 px-4 text-gray-900">Total</td>
-              <td className="py-3 px-4 text-gray-900">-</td>
-              <td className="py-3 px-4 text-gray-900">{totalResponses}</td>
+            <tr className="bg-slate-50 border-t border-slate-200 font-bold">
+              <td className="py-3 px-4 text-slate-800">Total</td>
+              <td className="py-3 px-4 text-slate-800">-</td>
+              <td className="py-3 px-4 text-slate-800">{totalResponses}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       {/* Q4: Overall Rating (Vertical Bar Chart) */}
-      <div className="print-chunk  pb-12 mb-16 page-break-inside-avoid">
-        <h2 className="text-xl font-normal text-center mb-1 text-gray-800">
-          Q4 Overall rating of trainee's professionalism (marked using a scale
-          of 1- 10 where 1 is "very Poor" and 10 is " Extremely Good")
+      <div className="print-chunk bg-white border border-slate-100 p-8 mb-12 shadow-sm page-break-inside-avoid">
+        <h2 className="text-lg font-bold text-slate-800 mb-1 tracking-tight">
+          Q4 Overall rating of trainee's professionalism
         </h2>
-        <div className="text-center text-sm text-gray-500 mb-8 mt-1">
-          <span>Answered: {totalResponses}</span>
-          <span className="ml-4">Skipped: 0</span>
+        <p className="text-xs text-slate-500 mb-4">
+          Marked using a scale of 1 - 10 where 1 is "Very Poor" and 10 is "Extremely Good"
+        </p>
+        <div className="flex gap-4 text-xs font-semibold text-slate-500 mb-6 uppercase tracking-wider">
+          <span className="bg-slate-100 px-2 py-1">Answered: {totalResponses}</span>
+          <span className="bg-slate-100 px-2 py-1">Skipped: 0</span>
         </div>
-        <div className="flex justify-center w-full mt-4">
+        <div className="flex justify-center w-full mt-2">
           <div className="w-[90%] h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={processedQ4}
                 margin={{ top: 20, right: 30, left: 0, bottom: 30 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis
                   dataKey="name"
                   interval={0}
                   tick={<CustomizedAxisTick />}
-                  axisLine={{ stroke: "#8b8d91ff", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
                   tickLine={false}
                 />
                 <YAxis
                   allowDecimals={false}
-                  axisLine={{ stroke: "#8b8d91ff", strokeWidth: 1 }}
+                  axisLine={{ stroke: "#cbd5e1", strokeWidth: 1 }}
                   tickLine={false}
+                  tick={{ fill: "#64748b", fontSize: 12, fontWeight: 500 }}
                 />
-                <Tooltip />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
                 <Bar
                   dataKey="count"
-                  fill="#4b5563"
-                  barSize={45}
-                  radius={[4, 4, 0, 0]}
+                  fill="#64748b"
+                  barSize={40}
+                  radius={[6, 6, 0, 0]}
                   isAnimationActive={false}
                 >
                   {processedQ4.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={smColors[index % smColors.length]}
+                      fill={modernColors[index % modernColors.length]}
                     />
                   ))}
                   <LabelList
                     dataKey="count"
                     position="top"
-                    style={{ fill: "#333", fontSize: 12, fontWeight: "bold" }}
+                    style={{ fill: "#475569", fontSize: 13, fontWeight: "bold" }}
                   />
                 </Bar>
               </BarChart>
@@ -513,26 +519,26 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
 
       {/* Q5: Comments */}
       {commentsQ5.length > 0 && (
-        <div className="print-chunk px-12 pb-12 mb-4">
-          <h2 className="text-lg font-semibold mb-4 text-center border-b border-gray-200 pb-2">
+        <div className="print-chunk bg-white border border-slate-100 p-8 mb-4 shadow-sm page-break-inside-avoid">
+          <h2 className="text-lg font-bold text-slate-800 mb-6 tracking-tight border-b border-slate-100 pb-4">
             Q5 Comments
           </h2>
-          <table className="w-full text-sm text-left border-collapse">
-            <thead className="bg-gray-100 border-b border-gray-300">
+          <table className="w-full text-sm text-left border-collapse border border-slate-100 overflow-hidden">
+            <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4 w-12 text-center text-gray-600">#</th>
-                <th className="py-3 px-4 text-gray-600">Responses</th>
-                <th className="py-3 px-4 w-32 text-gray-600">Date</th>
+                <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-12 text-center">#</th>
+                <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Responses</th>
+                <th className="py-3 px-4 font-bold text-slate-500 uppercase tracking-wider text-xs w-32 text-center">Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100">
               {commentsQ5.map((c, i) => (
-                <tr key={i} className="align-top page-break-inside-avoid">
-                  <td className=" px-4 text-center text-gray-500">{i + 1}</td>
-                  <td className=" px-4 text-gray-800 leading-relaxed whitespace-pre-wrap">
+                <tr key={i} className="align-top hover:bg-slate-50/50 transition-colors page-break-inside-avoid">
+                  <td className="py-4 px-4 text-center text-slate-400 font-semibold text-[11px]">{i + 1}</td>
+                  <td className="py-4 px-4 text-slate-700 leading-relaxed whitespace-pre-wrap font-medium text-xs">
                     {c.text}
                   </td>
-                  <td className=" px-4 text-gray-500 text-xs">{c.date}</td>
+                  <td className="py-4 px-4 text-slate-500 text-[11px] text-center font-medium">{c.date}</td>
                 </tr>
               ))}
             </tbody>
