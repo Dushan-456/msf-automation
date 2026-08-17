@@ -18,6 +18,7 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
       const dataUrl = await toJpeg(element, { 
         quality: 0.85,
         pixelRatio: 1.5, 
+        backgroundColor: '#ffffff',
         skipAutoScale: true
       });
       
@@ -32,7 +33,7 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
       
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        const dataUrl = await toJpeg(chunk, { quality: 0.85, pixelRatio: 1.5, skipAutoScale: true, style: { transform: 'scale(1)' } });
+        const dataUrl = await toJpeg(chunk, { quality: 0.85, pixelRatio: 1.5, backgroundColor: '#ffffff', skipAutoScale: true, style: { transform: 'scale(1)' } });
         const imgProps = pdf.getImageProperties(dataUrl);
         const chunkHeightTotal = (imgProps.height * pdfWidth) / imgProps.width;
         
