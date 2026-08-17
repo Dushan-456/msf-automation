@@ -331,6 +331,14 @@ export default function ReadyForAnalysis() {
         survey={detailSurvey}
         isOpen={detailOpen}
         onClose={() => setDetailOpen(false)}
+        onAnalyze={(survey) => {
+          setSurveys(prev => prev.filter(s => s.id !== survey.id));
+          setFetchedCount(prev => Math.max(0, prev - 1));
+        }}
+        onAnalyzeInSM={(survey) => {
+          setSurveys(prev => prev.filter(s => s.id !== survey.id));
+          setFetchedCount(prev => Math.max(0, prev - 1));
+        }}
       />
     </div>
   );
