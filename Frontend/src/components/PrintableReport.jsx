@@ -230,7 +230,7 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
     >
       {/* HEADER */}
       <div className="print-chunk text-center pb-8 pt-4 mb-10 border-b border-slate-200">
-        <h1 className="text-2xl font-extrabold mb-4 text-slate-800 tracking-tight whitespace-pre-line">
+        <h1 className="text-lg font-extrabold mb-4 text-slate-800 tracking-tight whitespace-pre-line">
           {survey.title || "Multisource Feedback Form (MSF)"}
         </h1>
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-slate-600">
