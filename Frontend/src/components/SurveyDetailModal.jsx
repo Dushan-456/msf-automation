@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ReportActionModal from './ReportActionModal';
 import api from '../utils/api';
 
 
@@ -11,7 +12,7 @@ import api from '../utils/api';
  *   isOpen   – boolean controlling visibility
  *   onClose  – callback to close the modal
  */
-export default function SurveyDetailModal({ survey, isOpen, onClose }) {
+export default function SurveyDetailModal({ survey, isOpen, onClose, onAnalyze, onAnalyzeInSM }) {
   // Collectors
   const [collectors, setCollectors] = useState([]);
   const [collectorsLoading, setCollectorsLoading] = useState(false);
@@ -34,6 +35,12 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
   // Reminder
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // Analyze in SM
+  const [analyzingInSM, setAnalyzingInSM] = useState(false);
+
+  // Analyze (PDF report) — opens the ReportActionModal from within the detail modal
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Toast
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
@@ -171,6 +178,32 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
     }
   };
 
+  // ── Analyze in SM handler ──
+  const handleAnalyzeInSM = async () => {
+    if (!survey) return;
+    setAnalyzingInSM(true);
+    try {
+      const res = await api.post(`/surveys/${survey.id}/analyze-in-sm`);
+      const data = res.data;
+      if (data.analyze_url) {
+        window.open(data.analyze_url, '_blank');
+      }
+      showToast(`"${survey.title}" moved to Analyzed & Completed.`, 'success');
+      if (onAnalyzeInSM) onAnalyzeInSM(survey);
+      setTimeout(() => onClose(), 2500);
+    } catch (err) {
+      console.error('Analyze in SM error:', err);
+      const isRateLimit = err.response?.status === 429;
+      if (isRateLimit) {
+        showToast('🚫 SurveyMonkey API daily limit reached. Please try again tomorrow.', 'error');
+      } else {
+        showToast('Failed to analyze. Please try again.', 'error');
+      }
+    } finally {
+      setAnalyzingInSM(false);
+    }
+  };
+
   // ── Copy Table as Rich HTML ──
   const handleCopyTable = async () => {
     const getEmailStatusColor = (status) => {
@@ -298,12 +331,49 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
           </button>
 
           {/* Header */}
-          <div className="flex items-start justify-between gap-6 px-8 pt-8">
-            <div className="shrink-0 text-center bg-slate-300 dark:bg-gray-800 p-2 rounded-lg">
-              <p className="text-xs text-slate-500 dark:text-gray-400 mb-0.5">Current Responses</p>
-              <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">{survey.response_count}</span>
+          <div className="px-8 pt-8">
+            <div className="flex items-start justify-between gap-6">
+              <div className="shrink-0 text-center bg-slate-300 dark:bg-gray-800 p-2 rounded-lg">
+                <p className="text-xs text-slate-500 dark:text-gray-400 mb-0.5">Current Responses</p>
+                <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">{survey.response_count}</span>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight flex-1">{survey.title}</h2>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white leading-tight flex-1">{survey.title}</h2>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2 mt-4">
+              <button
+                onClick={() => { setShowReportModal(true); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Analyze
+              </button>
+              <button
+                onClick={handleAnalyzeInSM}
+                disabled={analyzingInSM}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all shadow-sm disabled:opacity-60 disabled:cursor-wait"
+              >
+                {analyzingInSM ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Opening...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Analyze in SM
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Scrollable body */}
@@ -660,6 +730,19 @@ export default function SurveyDetailModal({ survey, isOpen, onClose }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Analyze Report Modal ── */}
+      {showReportModal && survey && (
+        <ReportActionModal
+          survey={survey}
+          onClose={() => setShowReportModal(false)}
+          onComplete={() => {
+            setShowReportModal(false);
+            if (onAnalyze) onAnalyze(survey);
+            onClose();
+          }}
+        />
       )}
 
       {/* ── Toast ── */}
