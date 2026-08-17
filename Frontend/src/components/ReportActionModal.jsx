@@ -80,28 +80,51 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
     
     let text = survey.title.replace(/Multisource Feedback Form \(MSF\)/i, '').trim();
     let doctorName = 'Doctor';
-    let specialty = 'Specialty';
+    let specialty = '';
+    let level = '';
     
-    const specialtyMatch = text.match(/Specialty\s*[-:]?\s*(.*)$/i);
+    // 1. Extract level from the last parentheses, e.g., "( Pre MD )" → "Pre MD"
+    const levelMatch = text.match(/\(\s*([^)]+?)\s*\)\s*$/);
+    if (levelMatch) {
+      level = levelMatch[1].trim();
+      text = text.replace(levelMatch[0], '').trim();
+    }
+    
+    // 2. Extract specialty from "Specialty - ..." (now without the level suffix)
+    const specialtyMatch = text.match(/Specialty\s*[-:]?\s*(.+)$/i);
     if (specialtyMatch) {
       specialty = specialtyMatch[1].trim();
       text = text.replace(specialtyMatch[0], '').trim();
     }
     
-    const trainerMatch = text.match(/Trainer\s*[-:]?\s*(.*)$/i);
+    // 3. Strip "Trainer - ..." segment (not needed in filename)
+    const trainerMatch = text.match(/Trainer\s*[-:]?\s*(.+)$/i);
     if (trainerMatch) {
       text = text.replace(trainerMatch[0], '').trim();
     }
     
+    // 4. Remaining text is the doctor name (may include "- SLMC - {number}")
     if (text) {
-      doctorName = text.trim();
+      // Clean up any trailing hyphens/spaces from empty SLMC segments
+      doctorName = text.replace(/[\s-]+$/, '').trim();
     }
     
-    const cleanDoc = doctorName.replace(/[^a-zA-Z0-9.\s-]/g, ' ').replace(/\s+/g, ' ').trim();
-    const cleanSpec = specialty.replace(/[^a-zA-Z0-9.\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+    // 5. Sanitize characters (allow parentheses for level, & and _ for specialty names)
+    const sanitize = (str) => str.replace(/[^a-zA-Z0-9.\s()&_-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const cleanDoc = sanitize(doctorName);
+    const cleanSpec = sanitize(specialty);
+    const cleanLevel = sanitize(level);
     
-    const finalTitle = `${cleanDoc} - ${cleanSpec}`.substring(0, 100).trim();
-    return finalTitle || 'MSF_Report';
+    // 6. Build filename: "DoctorName - SLMC - {number} - Specialty (Level)"
+    let finalTitle = cleanDoc;
+    if (cleanSpec) {
+      finalTitle += ` - ${cleanSpec}`;
+    }
+    if (cleanLevel) {
+      finalTitle += ` (${cleanLevel})`;
+    }
+    
+    return finalTitle.substring(0, 120).trim() || 'MSF_Report';
   }
 
   useEffect(() => {
