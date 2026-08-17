@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { toPng } from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import api from '../utils/api';
 import PrintableReport from './PrintableReport';
@@ -15,9 +15,9 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
       const element = printRef.current;
       if (!element) throw new Error("Report rendering failed.");
       
-      const dataUrl = await toPng(element, { 
-        quality: 1.0,
-        pixelRatio: 2, 
+      const dataUrl = await toJpeg(element, { 
+        quality: 0.85,
+        pixelRatio: 1.5, 
         skipAutoScale: true
       });
       
@@ -32,7 +32,7 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
       
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        const dataUrl = await toPng(chunk, { quality: 1.0, pixelRatio: 2, skipAutoScale: true, style: { transform: 'scale(1)' } });
+        const dataUrl = await toJpeg(chunk, { quality: 0.85, pixelRatio: 1.5, skipAutoScale: true, style: { transform: 'scale(1)' } });
         const imgProps = pdf.getImageProperties(dataUrl);
         const chunkHeightTotal = (imgProps.height * pdfWidth) / imgProps.width;
         
@@ -51,7 +51,7 @@ export default function ReportActionModal({ survey, onClose, onComplete }) {
             }
             
             // Draw chunk shifted UP by how much of it we have already drawn
-            pdf.addImage(dataUrl, 'PNG', 0, currentY - yOffset, pdfWidth, chunkHeightTotal);
+            pdf.addImage(dataUrl, 'JPEG', 0, currentY - yOffset, pdfWidth, chunkHeightTotal);
             
             const spaceAvailable = pageHeight - 10 - currentY;
             const chunkRemaining = chunkHeightTotal - yOffset;
