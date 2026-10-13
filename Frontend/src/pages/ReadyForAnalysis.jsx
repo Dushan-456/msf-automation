@@ -75,6 +75,26 @@ export default function ReadyForAnalysis() {
     }
   };
 
+  const handlePrintClick = async (e, survey) => {
+    e.stopPropagation();
+
+    // 1. Open print view in new tab
+    window.open(`/print-report/${survey.id}?autoMoved=true`, '_blank');
+
+    // 2. Hide survey from Ready for Analysis page immediately (same as SM & PDF analyze)
+    setSurveys(prev => prev.filter(s => s.id !== survey.id));
+    setFetchedCount(prev => Math.max(0, prev - 1));
+    setToast({ show: true, message: `"${survey.title}" opened in print view and moved to Completed.`, type: 'success' });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+
+    // 3. Auto-move to completed folder in SurveyMonkey & update local cache
+    try {
+      await api.patch(`/reports/${survey.id}/complete`);
+    } catch (err) {
+      console.error('Failed to auto-move survey to completed folder on print:', err);
+    }
+  };
+
   const handleAnalyzeInSM = async (e, survey) => {
     e.stopPropagation();
     setAnalyzingId(survey.id);
@@ -278,9 +298,9 @@ export default function ReadyForAnalysis() {
                       Analyze
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); window.open(`/print-report/${survey.id}`, '_blank'); }}
+                      onClick={(e) => handlePrintClick(e, survey)}
                       className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
-                      title="Open printable report styled exactly as SurveyMonkey analyze report"
+                      title="Open printable report and auto-move to Completed folder"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -349,7 +369,31 @@ export default function ReadyForAnalysis() {
           setSurveys(prev => prev.filter(s => s.id !== survey.id));
           setFetchedCount(prev => Math.max(0, prev - 1));
         }}
+        onPrint={(survey) => {
+          setSurveys(prev => prev.filter(s => s.id !== survey.id));
+          setFetchedCount(prev => Math.max(0, prev - 1));
+        }}
       />
+
+      {/* Floating Toast Notification */}
+      {toast.show && (
+        <div
+          className={`fixed bottom-8 right-8 z-[70] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl font-medium text-white max-w-sm transition-all duration-300 ${
+            toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <svg className="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+          <p className="leading-tight text-sm font-semibold">{toast.message}</p>
+        </div>
+      )}
     </div>
   );
 }
