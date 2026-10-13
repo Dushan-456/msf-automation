@@ -12,7 +12,7 @@ import api from '../utils/api';
  *   isOpen   – boolean controlling visibility
  *   onClose  – callback to close the modal
  */
-export default function SurveyDetailModal({ survey, isOpen, onClose, onAnalyze, onAnalyzeInSM }) {
+export default function SurveyDetailModal({ survey, isOpen, onClose, onAnalyze, onAnalyzeInSM, onPrint }) {
   // Collectors
   const [collectors, setCollectors] = useState([]);
   const [collectorsLoading, setCollectorsLoading] = useState(false);
@@ -204,6 +204,20 @@ export default function SurveyDetailModal({ survey, isOpen, onClose, onAnalyze, 
     }
   };
 
+  // ── Print handler ──
+  const handlePrintModal = async () => {
+    if (!survey) return;
+    window.open(`/print-report/${survey.id}?autoMoved=true`, '_blank');
+    showToast(`"${survey.title}" opened in print view and moved to Completed.`, 'success');
+    if (onPrint) onPrint(survey);
+    try {
+      await api.patch(`/reports/${survey.id}/complete`);
+    } catch (err) {
+      console.error('Print modal complete error:', err);
+    }
+    setTimeout(() => onClose(), 1500);
+  };
+
   // ── Copy Table as Rich HTML ──
   const handleCopyTable = async () => {
     const getEmailStatusColor = (status) => {
@@ -374,9 +388,9 @@ export default function SurveyDetailModal({ survey, isOpen, onClose, onAnalyze, 
                 )}
               </button>
               <button
-                onClick={() => window.open(`/print-report/${survey.id}`, '_blank')}
+                onClick={handlePrintModal}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:border-purple-300 dark:hover:border-purple-700 transition-all shadow-sm"
-                title="Open printable report styled exactly as SurveyMonkey analyze report"
+                title="Open printable report and auto-move to Completed folder"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
