@@ -2,7 +2,7 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import asyncHandler from '../middleware/asyncHandler.mjs';
 import { createJob, getJobStatus, updateJobProgress, failJob, updateJobActivity, updateRowStatus } from '../services/jobService.mjs';
-import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService, addNewEmailsToCollectorByCollectorId, getDashboardStats } from '../services/surveyMonkeyService.mjs';
+import { processSurveyMonkeyWorkflow, fetchAllSurveys, sendReminderToNonRespondents, fetchRecipientTracking, fetchSurveyCollectors, fetchRecipientTrackingByCollector, fetchReadySurveys, fetchToBeAnalyzedSurveys, fetchCompletedSurveys, fetchSurveyReportData, markSurveyComplete as markSurveyCompleteService, moveToBeAnalyzed as moveToBeAnalyzedService, addNewEmailsToCollectorByCollectorId, getDashboardStats } from '../services/surveyMonkeyService.mjs';
 import { sendDoctorNotificationEmail } from '../services/emailService.mjs';
 
 /**
@@ -201,6 +201,12 @@ export const markSurveyComplete = asyncHandler(async (req, res) => {
     const { surveyId } = req.params;
     await markSurveyCompleteService(surveyId);
     res.json({ success: true, message: 'Survey successfully marked as complete.' });
+});
+
+export const moveToToBeAnalyzed = asyncHandler(async (req, res) => {
+    const { surveyId } = req.params;
+    await moveToBeAnalyzedService(surveyId);
+    res.json({ success: true, message: 'Survey successfully moved to To Be Analyzed folder.' });
 });
 
 export const analyzeInSM = asyncHandler(async (req, res) => {
