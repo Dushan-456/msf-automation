@@ -15,6 +15,7 @@ import UserManagement from './pages/UserManagement';
 import EmailSettings from './pages/EmailSettings';
 import Login from './pages/Login';
 import LogoutModal from './components/LogoutModal';
+import PrintReportPage from './pages/PrintReportPage';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -90,50 +91,61 @@ function App() {
 
   return (
     <Router>
-      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
-        <Sidebar user={user} onLogout={requestLogout} />
-        
-        {/* Main Content Area */}
-        <div className="flex-1 ml-80 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
-          <TopHeader user={user} theme={theme} toggleTheme={toggleTheme} onLogout={requestLogout} />
-          
-          <main className="flex-1 w-full p-6">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/automated-creation" element={<AutomatedCreation />} />
-              <Route path="/all-surveys" element={<AllSurveys />} />
-              <Route path="/ready-for-analysis" element={<ReadyForAnalysis />} />
-              <Route path="/to-be-analyzed" element={<ToBeAnalyzed />} />
-              <Route path="/analyzed-completed" element={<AnalyzedCompleted />} />
-              <Route path="/subject-upload" element={<SubjectUpload />} />
-              <Route path="/subject-settings" element={<SubjectSettings />} />
+      <Routes>
+        {/* Dedicated Standalone Print View (no sidebar or header) */}
+        <Route path="/print-report/:surveyId" element={<PrintReportPage />} />
+
+        {/* Regular Application Shell */}
+        <Route
+          path="/*"
+          element={
+            <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
+              <Sidebar user={user} onLogout={requestLogout} />
               
-              {/* Protected Admin Routes */}
-              {user?.role === 'ADMIN' ? (
-                <>
-                  <Route path="/token-settings" element={<TokenSettings />} />
-                  <Route path="/user-management" element={<UserManagement />} />
-                  <Route path="/email-settings" element={<EmailSettings />} />
-                </>
-              ) : (
-                <>
-                  <Route path="/token-settings" element={<Navigate to="/" replace />} />
-                  <Route path="/user-management" element={<Navigate to="/" replace />} />
-                  <Route path="/email-settings" element={<Navigate to="/" replace />} />
-                </>
-              )}
+              {/* Main Content Area */}
+              <div className="flex-1 ml-80 h-screen flex flex-col overflow-y-auto overflow-x-hidden">
+                <TopHeader user={user} theme={theme} toggleTheme={toggleTheme} onLogout={requestLogout} />
+                
+                <main className="flex-1 w-full p-6">
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/automated-creation" element={<AutomatedCreation />} />
+                    <Route path="/all-surveys" element={<AllSurveys />} />
+                    <Route path="/ready-for-analysis" element={<ReadyForAnalysis />} />
+                    <Route path="/to-be-analyzed" element={<ToBeAnalyzed />} />
+                    <Route path="/analyzed-completed" element={<AnalyzedCompleted />} />
+                    <Route path="/subject-upload" element={<SubjectUpload />} />
+                    <Route path="/subject-settings" element={<SubjectSettings />} />
+                    
+                    {/* Protected Admin Routes */}
+                    {user?.role === 'ADMIN' ? (
+                      <>
+                        <Route path="/token-settings" element={<TokenSettings />} />
+                        <Route path="/user-management" element={<UserManagement />} />
+                        <Route path="/email-settings" element={<EmailSettings />} />
+                      </>
+                    ) : (
+                      <>
+                        <Route path="/token-settings" element={<Navigate to="/" replace />} />
+                        <Route path="/user-management" element={<Navigate to="/" replace />} />
+                        <Route path="/email-settings" element={<Navigate to="/" replace />} />
+                      </>
+                    )}
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-        </div>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </main>
+              </div>
 
-        <LogoutModal 
-          isOpen={isLogoutModalOpen}
-          onClose={cancelLogout}
-          onConfirm={handleLogout}
+              <LogoutModal 
+                isOpen={isLogoutModalOpen}
+                onClose={cancelLogout}
+                onConfirm={handleLogout}
+              />
+            </div>
+          }
         />
-      </div>
+      </Routes>
     </Router>
   );
 }
