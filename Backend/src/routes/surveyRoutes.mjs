@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import auth from '../middleware/auth.mjs';
-import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry, getTrackingData, getSurveyCollectors, getTrackingByCollector, getReadySurveys, getToBeAnalyzedSurveys, getCompletedSurveys, getSurveyReportData, analyzeInSM, markSurveyComplete, addNewInvites, getDashboardAnalytics } from '../controllers/surveyController.mjs';
+import { uploadAndStartAutomation, checkJobStatus, getAllSurveys, sendReminders, processManualEntry, getTrackingData, getSurveyCollectors, getTrackingByCollector, getReadySurveys, getToBeAnalyzedSurveys, getCompletedSurveys, getSurveyReportData, analyzeInSM, markSurveyComplete, moveToToBeAnalyzed, addNewInvites, getDashboardAnalytics } from '../controllers/surveyController.mjs';
 
 const router = express.Router();
 
@@ -36,6 +36,7 @@ router.get('/reports/to-be-analyzed', getToBeAnalyzedSurveys);
 router.get('/reports/completed', getCompletedSurveys);
 router.get('/reports/:surveyId/data', getSurveyReportData);
 router.patch('/reports/:surveyId/complete', markSurveyComplete);
+router.patch('/reports/:surveyId/to-be-analyzed', moveToToBeAnalyzed);
 router.post('/collectors/:collectorId/invites', addNewInvites);
 router.get('/surveys/dashboard-stats', getDashboardAnalytics);
 
