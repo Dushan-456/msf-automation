@@ -653,6 +653,28 @@ export const markSurveyComplete = async (surveyId) => {
 };
 
 /**
+ * Moves a survey back to the 'To Be Analyzed' folder (TO_BE_ANALYZE_FOLDER_ID).
+ */
+export const moveToBeAnalyzed = async (surveyId) => {
+  const headers = await getHeaders();
+  const toBeAnalyzedFolderId = process.env.TO_BE_ANALYZE_FOLDER_ID || "2452482";
+  
+  const res = await axios.patch(
+    `https://api.surveymonkey.com/v3/surveys/${surveyId}`,
+    { folder_id: toBeAnalyzedFolderId },
+    { headers }
+  );
+
+  // Instantly reflect the folder change in our local MongoDB cache
+  await SurveyCache.updateOne(
+    { smId: surveyId },
+    { $set: { folder_id: toBeAnalyzedFolderId, survey_state: 'to_be_analyzed' } }
+  );
+  
+  return res.data;
+};
+
+/**
  * Adds new emails to an existing collector's invite message and sends it.
  */
 export const addNewEmailsToCollectorByCollectorId = async (collectorId, newEmailsString) => {
