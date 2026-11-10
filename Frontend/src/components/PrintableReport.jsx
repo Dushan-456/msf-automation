@@ -326,15 +326,67 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
     "#6b7882", // 10 - slate gray
   ];
 
-  // ── Q5 Comments Pagination ──
-  // Page 2 displays up to 4 comments. Subsequent comments go onto Page 3 and onward (10 per page).
-  const page2Comments = commentsQ5.slice(0, 4);
-  const remainingComments = commentsQ5.slice(4);
-  const remainingPages = [];
-  for (let i = 0; i < remainingComments.length; i += 10) {
-    remainingPages.push(remainingComments.slice(i, i + 10));
+  // ── Q5 Comments Dynamic Pagination ──
+  // Calculate comment distribution dynamically based on estimated rendered height
+  // to avoid overflowing A4 page boundaries and prevent print overlaps.
+  const estimateCommentHeight = (text) => {
+    if (!text) return 36;
+    const paragraphs = text.split(/\r?\n/);
+    let lineCount = 0;
+    for (const para of paragraphs) {
+      if (para.length === 0) {
+        lineCount += 1;
+      } else {
+        // Average ~65 characters per line in an 11px font in a ~480px wide cell
+        lineCount += Math.max(1, Math.ceil(para.length / 65));
+      }
+    }
+    // Base cell padding & borders (~18px) + line-height (~18px per line)
+    return Math.round(18 + lineCount * 18);
+  };
+
+  // Attach 1-based sequential number to each comment so numbering is always continuous
+  const indexedCommentsQ5 = commentsQ5.map((c, i) => ({
+    ...c,
+    index: i + 1,
+  }));
+
+  // Distribute comments across pages:
+  // Page 2 has Q3 table, Q4 chart, and Q5 heading, leaving ~330px for comments (max 4 comments).
+  // Subsequent pages have only running header and table header, leaving ~800px (max 10 comments).
+  const paginatedCommentPages = [];
+  if (indexedCommentsQ5.length > 0) {
+    let currentPage = [];
+    let currentHeight = 0;
+    let isFirstPage = true;
+
+    for (let i = 0; i < indexedCommentsQ5.length; i++) {
+      const comment = indexedCommentsQ5[i];
+      const commentHeight = estimateCommentHeight(comment.text);
+      const maxHeight = isFirstPage ? 330 : 800;
+      const maxCount = isFirstPage ? 4 : 10;
+
+      const exceedsHeight = (currentHeight + commentHeight) > maxHeight;
+      const exceedsCount = currentPage.length >= maxCount;
+
+      if (currentPage.length > 0 && (exceedsHeight || exceedsCount)) {
+        paginatedCommentPages.push(currentPage);
+        currentPage = [comment];
+        currentHeight = commentHeight;
+        isFirstPage = false;
+      } else {
+        currentPage.push(comment);
+        currentHeight += commentHeight;
+      }
+    }
+
+    if (currentPage.length > 0) {
+      paginatedCommentPages.push(currentPage);
+    }
   }
 
+  const page2Comments = paginatedCommentPages[0] || [];
+  const remainingPages = paginatedCommentPages.slice(1);
   const totalPages = 2 + remainingPages.length;
 
   return (
@@ -431,7 +483,7 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
                         <td className="py-1.5 px-3 text-[#6c757d] font-medium text-[10.5px] text-center">
                           {idx + 1}
                         </td>
-                        <td className="py-1.5 px-3 text-[#212529] text-[11px] leading-relaxed">
+                        <td className="py-1.5 px-3 text-[#212529] text-[11px] leading-relaxed break-words">
                           {item.text}
                         </td>
                         <td className="py-1.5 px-3 text-[#6c757d] text-[10.5px] whitespace-nowrap">
@@ -680,12 +732,12 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
               </thead>
               <tbody className="divide-y divide-[#f1f3f5]">
                 {page2Comments.length > 0 ? (
-                  page2Comments.map((c, i) => (
-                    <tr key={i} className="align-top hover:bg-slate-50/50">
+                  page2Comments.map((c) => (
+                    <tr key={c.index} className="align-top hover:bg-slate-50/50">
                       <td className="py-2 px-3 text-[#6c757d] font-medium text-[10.5px] text-center">
-                        {i + 1}
+                        {c.index}
                       </td>
-                      <td className="py-2 px-3 text-[#212529] text-[11px] leading-relaxed whitespace-pre-wrap">
+                      <td className="py-2 px-3 text-[#212529] text-[11px] leading-relaxed whitespace-pre-wrap break-words">
                         {c.text}
                       </td>
                       <td className="py-2 px-3 text-[#6c757d] text-[10.5px] whitespace-nowrap">
@@ -716,7 +768,7 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          PAGE 3+: Subsequent Q5 Comments (if more than 4 comments exist)
+          PAGE 3+: Subsequent Q5 Comments (if more comments exist)
           ═══════════════════════════════════════════════════════════════ */}
       {remainingPages.map((pageComments, pageIdx) => (
         <div key={pageIdx} className="sm-report-page print-chunk">
@@ -742,12 +794,12 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f1f3f5]">
-                {pageComments.map((c, i) => (
-                  <tr key={i} className="align-top hover:bg-slate-50/50">
+                {pageComments.map((c) => (
+                  <tr key={c.index} className="align-top hover:bg-slate-50/50">
                     <td className="py-2 px-3 text-[#6c757d] font-medium text-[10.5px] text-center">
-                      {4 + pageIdx * 10 + i + 1}
+                      {c.index}
                     </td>
-                    <td className="py-2 px-3 text-[#212529] text-[11px] leading-relaxed whitespace-pre-wrap">
+                    <td className="py-2 px-3 text-[#212529] text-[11px] leading-relaxed whitespace-pre-wrap break-words">
                       {c.text}
                     </td>
                     <td className="py-2 px-3 text-[#6c757d] text-[10.5px] whitespace-nowrap">
@@ -811,8 +863,10 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
             .sm-report-page {
               page-break-after: always;
               break-after: page;
-              min-height: 275mm;
-              height: 275mm;
+              page-break-inside: avoid;
+              break-inside: avoid;
+              min-height: 265mm;
+              height: auto !important;
               display: flex;
               flex-direction: column;
               justify-content: space-between;
@@ -822,10 +876,28 @@ const PrintableReport = forwardRef(({ survey, data }, ref) => {
               background: #ffffff !important;
               box-shadow: none !important;
               border: none !important;
+              overflow: visible !important;
             }
             .sm-report-page:last-child {
               page-break-after: auto;
               break-after: auto;
+            }
+            table {
+              page-break-inside: auto;
+              break-inside: auto;
+            }
+            tr {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            td, th {
+              word-break: break-word;
+              overflow-wrap: break-word;
+            }
+            .recharts-responsive-container,
+            svg {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
             }
           }
         `}
